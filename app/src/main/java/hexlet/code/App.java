@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 public class App {
 
-    private static final Logger logger = LoggerFactory.getLogger(App.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     public static Javalin getApp() {
         Javalin app = Javalin.create(config -> {
@@ -27,6 +27,6 @@ public class App {
 
         Javalin app = getApp();
         app.start(port);
-        logger.info("App started on port {}", port);
+        LOGGER.info("App started on port {}", port);
     }
 }

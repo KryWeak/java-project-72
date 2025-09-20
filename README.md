@@ -7,3 +7,9 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=KryWeak_java-project-72&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=KryWeak_java-project-72)
 
 ---
+
+## Деплой
+
+[Перейти к приложению](https://<your-service-name>.onrender.com)
+
+---
