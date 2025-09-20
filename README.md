@@ -10,6 +10,6 @@
 
 ## Деплой
 
-[Перейти к приложению](https://<your-service-name>.onrender.com)
+[Перейти к приложению](https://java-project-72-an1g.onrender.com)
 
 ---
