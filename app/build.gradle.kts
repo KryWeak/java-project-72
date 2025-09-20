@@ -20,6 +20,10 @@ application {
 }
 
 dependencies {
+    implementation("com.zaxxer:HikariCP:5.0.1")
+    implementation("com.h2database:h2:2.2.222")
+    implementation("org.postgresql:postgresql:42.6.0")
+
     implementation("io.javalin:javalin:5.6.2")
     implementation("org.slf4j:slf4j-simple:2.0.9")
 
