@@ -1,4 +1,6 @@
 @template()
+@param String flash
+@param String flashType
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,9 +12,9 @@
     <h1 class="text-primary">URL Analyzer 🚀</h1>
 
     <!-- Flash-сообщения -->
-    @if(ctx.hasMessage())
-        <div class="alert @if(ctx.messageCategory() == io.javalin.http.FlashScope.SUCCESS)alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
-            ${ctx.consumeMessage()}
+    @if(flash != null)
+        <div class="alert @if(flashType == 'success')alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
+            ${flash}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif

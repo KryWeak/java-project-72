@@ -1,4 +1,7 @@
 @template()
+@param List<hexlet.code.models.Url> urls
+@param String flash
+@param String flashType
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,9 +12,9 @@
 <body class="container mt-5">
     <h1>Сайты</h1>
     <a href="/" class="btn btn-primary mb-3">Добавить URL</a>
-    @if(ctx.hasMessage())
-        <div class="alert @if(ctx.messageCategory() == io.javalin.http.FlashScope.SUCCESS)alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
-            ${ctx.consumeMessage()}
+    @if(flash != null)
+        <div class="alert @if(flashType == 'success')alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
+            ${flash}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif

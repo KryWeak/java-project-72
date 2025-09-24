@@ -14,8 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URL;
-import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class App {
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
@@ -35,7 +36,14 @@ public class App {
         });
 
         // Главная страница с формой
-        app.get("/", ctx -> ctx.render("index.jte"));
+        app.get("/", ctx -> {
+            Map<String, Object> model = new HashMap<>();
+            model.put("flash", ctx.sessionAttribute("flash"));
+            model.put("flashType", ctx.sessionAttribute("flash-type"));
+            ctx.sessionAttribute("flash", null); // Очищаем flash после использования
+            ctx.sessionAttribute("flash-type", null);
+            ctx.render("index.jte", model);
+        });
 
         // Обработка добавления URL
         app.post("/urls", ctx -> {
@@ -52,7 +60,6 @@ public class App {
             try {
                 URI uri = new URI(inputUrl);
                 URL url = uri.toURL();
-                // Извлекаем протокол, хост и порт (если есть)
                 StringBuilder urlBuilder = new StringBuilder();
                 urlBuilder.append(url.getProtocol()).append("://").append(url.getHost());
                 if (url.getPort() != -1) {
