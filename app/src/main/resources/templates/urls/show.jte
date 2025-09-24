@@ -1,4 +1,5 @@
 @template()
+@param hexlet.code.models.Url url
 <!DOCTYPE html>
 <html>
 <head>

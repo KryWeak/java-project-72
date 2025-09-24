@@ -94,7 +94,13 @@ public class App {
         // Список всех URL
         app.get("/urls", ctx -> {
             List<Url> urls = urlRepository.findAll();
-            ctx.render("urls/index.jte", java.util.Collections.singletonMap("urls", urls));
+            Map<String, Object> model = new HashMap<>();
+            model.put("urls", urls);
+            model.put("flash", ctx.sessionAttribute("flash"));
+            model.put("flashType", ctx.sessionAttribute("flash-type"));
+            ctx.sessionAttribute("flash", null); // Очищаем flash
+            ctx.sessionAttribute("flash-type", null);
+            ctx.render("urls/index.jte", model);
         });
 
         // Страница конкретного URL
