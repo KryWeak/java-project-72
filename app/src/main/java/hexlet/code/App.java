@@ -18,7 +18,7 @@ public class App {
     }
 
     public static Javalin getApp() {
-        DatabaseInitializer.init();
+        DatabaseInitializer.init(); // Инициализация базы данных
 
         Javalin app = Javalin.create(config -> {
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
@@ -31,7 +31,7 @@ public class App {
 
     public static void main(String[] args) {
         Javalin app = getApp();
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "7000"));
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080")); // Обновлено на 8080
         app.start(port);
         LOGGER.info("App started on port " + port);
     }

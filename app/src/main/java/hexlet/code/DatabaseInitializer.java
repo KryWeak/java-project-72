@@ -1,7 +1,7 @@
 package hexlet.code;
 
-import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import hexlet.code.repositories.Database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -9,28 +9,20 @@ import java.sql.Statement;
 
 public class DatabaseInitializer {
 
-    private static HikariDataSource dataSource;
-
     public static void init() {
-        if (dataSource != null) return;
+        HikariDataSource dataSource = (HikariDataSource) Database.getDataSource();
 
-        HikariConfig config = new HikariConfig();
-
-        // Используй Render DATABASE_URL в формате:
-        // jdbc:postgresql://host:port/dbname?user=username&password=password
-        String dbUrl = System.getenv().getOrDefault(
-                "DATABASE_URL",
-                "jdbc:postgresql://localhost:5432/java_project_72?user=postgres&password=postgres"
-        );
-
-        config.setJdbcUrl(dbUrl);
-        config.setMaximumPoolSize(10);
-
-        dataSource = new HikariDataSource(config);
-
-        // Создаём таблицу users, если не существует
+        // Создаём таблицы urls и users, если они не существуют
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
+
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS urls (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL UNIQUE,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                """);
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -46,6 +38,6 @@ public class DatabaseInitializer {
     }
 
     public static HikariDataSource getDataSource() {
-        return dataSource;
+        return (HikariDataSource) Database.getDataSource();
     }
 }
