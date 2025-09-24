@@ -13,10 +13,15 @@ public final class Database {
         if (dataSource == null) {
             HikariConfig config = new HikariConfig();
 
-            // Используем переменную окружения DATABASE_URL от Render
+            // Получаем DATABASE_URL из переменной окружения
             String dbUrl = System.getenv("DATABASE_URL");
             if (dbUrl == null || dbUrl.isEmpty()) {
                 throw new IllegalStateException("DATABASE_URL environment variable is not set");
+            }
+
+            // Преобразуем postgresql:// в jdbc:postgresql://
+            if (dbUrl.startsWith("postgresql://")) {
+                dbUrl = "jdbc:" + dbUrl;
             }
 
             config.setJdbcUrl(dbUrl);
