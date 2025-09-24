@@ -18,13 +18,13 @@ public class App {
     }
 
     public static Javalin getApp() {
-        DatabaseInitializer.init();
+        DatabaseInitializer.init();  // инициализация БД
 
         Javalin app = Javalin.create(config -> {
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
-        app.get("/", ctx -> ctx.render("index.jte"));
+        app.get("/", ctx -> ctx.render("index.jte")); // главная страница
 
         return app;
     }
