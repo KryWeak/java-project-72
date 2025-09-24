@@ -22,9 +22,8 @@ public class App {
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     private static TemplateEngine createTemplateEngine() {
-        ClassLoader classLoader = App.class.getClassLoader();
-        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
-        return TemplateEngine.create(codeResolver, ContentType.Html);
+        // Используем precompiled шаблоны
+        return TemplateEngine.createPrecompiled(ContentType.Html);
     }
 
     public static Javalin getApp() {
