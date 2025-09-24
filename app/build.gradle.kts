@@ -13,6 +13,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 application {
@@ -24,7 +25,11 @@ dependencies {
     implementation("com.h2database:h2:2.2.222")
     implementation("org.postgresql:postgresql:42.6.0")
 
-    implementation("io.javalin:javalin:5.6.2")
+    implementation("io.javalin:javalin:6.6.0")
+    implementation("io.javalin:javalin-bundle:6.6.0")
+    implementation("io.javalin:javalin-rendering:6.6.0")
+    implementation("gg.jte:jte:3.2.0")
+
     implementation("org.slf4j:slf4j-simple:2.0.9")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
