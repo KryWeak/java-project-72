@@ -1,15 +1,14 @@
-FROM openjdk:21-jdk-slim
-
+# Этап сборки
+FROM openjdk:21-jdk-slim AS build
 WORKDIR /app
-
 COPY . .
-
-# Делаем gradlew исполняемым
 RUN chmod +x gradlew
-
-# Собираем fat-jar
 RUN ./gradlew shadowJar
 
+# Этап запуска
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/build/libs/app-1.0.jar app.jar
 ENV PORT=8080
-
-CMD ["java", "-jar", "build/libs/app-1.0.jar"]
+EXPOSE 8080
+CMD ["java", "-jar", "app.jar"]
