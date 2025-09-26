@@ -1,61 +1,108 @@
 package hexlet.code;
 
+import gg.jte.ContentType;
+import gg.jte.TemplateEngine;
 import hexlet.code.models.Url;
 import hexlet.code.repositories.Database;
 import hexlet.code.repositories.UrlRepository;
 import io.javalin.Javalin;
-import io.javalin.rendering.template.JavalinJte;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.rendering.template.JavalinJte;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
 import java.net.URL;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class App {
-    public static Javalin getApp() throws SQLException {
-        var app = Javalin.create(config -> {
-            config.bundledPlugins.enableDevLogging(); // Исправлено: используем bundledPlugins
-            config.fileRenderer(new JavalinJte());
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
+
+    private static TemplateEngine createTemplateEngine() {
+        // Используем precompiled шаблоны для runtime в JRE
+        return TemplateEngine.createPrecompiled(ContentType.Html);
+    }
+
+    public static Javalin getApp() {
+        DatabaseInitializer.init();
+
+        Javalin app = Javalin.create(config -> {
+            config.bundledPlugins.enableDevLogging();
+            config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
+        UrlRepository urlRepository = new UrlRepository(Database.getDataSource());
+
         app.get("/", ctx -> {
-            ctx.render("index.jte", Collections.singletonMap("flash", ctx.consumeSessionAttribute("flash")));
+            Map<String, Object> model = new HashMap<>();
+            model.put("flash", ctx.sessionAttribute("flash"));
+            model.put("flashType", ctx.sessionAttribute("flash-type"));
+            ctx.sessionAttribute("flash", null);
+            ctx.sessionAttribute("flash-type", null);
+            ctx.render("index.jte", model);
         });
 
         app.post("/urls", ctx -> {
-            var urlName = ctx.formParam("url");
-            try {
-                var url = new URL(urlName);
-                var name = url.getProtocol() + "://" + url.getHost() + (url.getPort() == -1 ? "" : ":" + url.getPort());
-                var urlRecord = new Url(null, name, Timestamp.from(Instant.now()));
-                var urlRepository = new UrlRepository(Database.getDataSource());
-                if (urlRepository.findByName(name).isPresent()) {
-                    ctx.sessionAttribute("flash", "URL already exists");
-                    ctx.sessionAttribute("flashType", "danger");
-                } else {
-                    urlRepository.save(urlRecord);
-                    ctx.sessionAttribute("flash", "URL successfully added");
-                    ctx.sessionAttribute("flashType", "success");
-                }
-                ctx.redirect("/urls");
-            } catch (Exception e) {
-                ctx.sessionAttribute("flash", "Invalid URL");
-                ctx.sessionAttribute("flashType", "danger");
+            String inputUrl = ctx.formParam("url");
+            if (inputUrl == null || inputUrl.isBlank()) {
+                ctx.sessionAttribute("flash", "Некорректный URL");
+                ctx.sessionAttribute("flash-type", "danger");
                 ctx.redirect("/");
+                return;
             }
+
+            String normalizedUrl;
+            try {
+                URI uri = new URI(inputUrl);
+                URL url = uri.toURL();
+                StringBuilder urlBuilder = new StringBuilder();
+                urlBuilder.append(url.getProtocol()).append("://").append(url.getHost());
+                if (url.getPort() != -1) {
+                    urlBuilder.append(":").append(url.getPort());
+                }
+                normalizedUrl = urlBuilder.toString();
+            } catch (Exception e) {
+                ctx.sessionAttribute("flash", "Некорректный URL");
+                ctx.sessionAttribute("flash-type", "danger");
+                ctx.redirect("/");
+                return;
+            }
+
+            if (urlRepository.findByName(normalizedUrl).isPresent()) {
+                ctx.sessionAttribute("flash", "Страница уже существует");
+                ctx.sessionAttribute("flash-type", "danger");
+                ctx.redirect("/");
+                return;
+            }
+
+            // Используем конструктор с параметрами вместо конструктора по умолчанию
+            Url newUrl = new Url(null, normalizedUrl, Timestamp.from(Instant.now()));
+            urlRepository.save(newUrl);
+
+            ctx.sessionAttribute("flash", "Страница успешно добавлена");
+            ctx.sessionAttribute("flash-type", "success");
+            ctx.redirect("/urls");
         });
 
         app.get("/urls", ctx -> {
-            var urlRepository = new UrlRepository(Database.getDataSource());
-            var urls = urlRepository.findAll();
-            ctx.render("urls/index.jte", Collections.singletonMap("urls", urls));
+            List<Url> urls = urlRepository.findAll();
+            Map<String, Object> model = new HashMap<>();
+            model.put("urls", urls);
+            model.put("flash", ctx.sessionAttribute("flash"));
+            model.put("flashType", ctx.sessionAttribute("flash-type"));
+            ctx.sessionAttribute("flash", null);
+            ctx.sessionAttribute("flash-type", null);
+            ctx.render("urls/index.jte", model);
         });
 
         app.get("/urls/{id}", ctx -> {
-            var id = ctx.pathParamAsClass("id", Long.class).get();
-            var urlRepository = new UrlRepository(Database.getDataSource());
-            var url = urlRepository.findById(id)
+            Long id = ctx.pathParamAsClass("id", Long.class).get();
+            Url url = urlRepository.findById(id)
                     .orElseThrow(() -> new NotFoundResponse("URL not found"));
             ctx.render("urls/show.jte", Collections.singletonMap("url", url));
         });
@@ -63,8 +110,14 @@ public final class App {
         return app;
     }
 
-    public static void main(String[] args) throws SQLException {
-        var app = getApp();
-        app.start(8080);
+    public static void main(String[] args) {
+        try {
+            Javalin app = getApp();
+            int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+            app.start(port);
+            LOGGER.info("App started on port " + port);
+        } catch (Exception e) {
+            LOGGER.error("Failed to start application", e);
+        }
     }
 }

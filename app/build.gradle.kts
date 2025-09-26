@@ -66,9 +66,8 @@ tasks.jacocoTestReport {
 tasks.shadowJar {
     archiveFileName.set("app-1.0.jar")
     dependsOn(tasks.precompileJte)
-    from(fileTree("jte-classes") {
+    from(fileTree("build/jte-classes") {
         include("**/*.class")
-        include("**/*.bin")
     })
 }
 
