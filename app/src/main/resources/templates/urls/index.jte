@@ -1,41 +1,48 @@
-@template()
-@param List<hexlet.code.models.Url> urls
+@import java.util.List
+@import hexlet.code.models.Url
+@import java.time.format.DateTimeFormatter
+
+@param List<Url> urls
 @param String flash
 @param String flashType
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>URLs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>URL List</title>
+    <style>
+        .alert-success { color: green; }
+        .alert-danger { color: red; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+    </style>
 </head>
-<body class="container mt-5">
-    <h1>Сайты</h1>
-    <a href="/" class="btn btn-primary mb-3">Добавить URL</a>
+<body>
     @if(flash != null)
-        <div class="alert @if(flashType.equals("success"))alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
+        <div class="alert alert-${flashType}">
             ${flash}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-    <table class="table">
+
+    <h1>URLs</h1>
+    <table>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Имя</th>
-                <th>Дата создания</th>
+                <th>Name</th>
+                <th>Created At</th>
             </tr>
         </thead>
         <tbody>
-            @for(url in urls)
+            @for(Url url : urls)
                 <tr>
                     <td>${url.getId()}</td>
                     <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-                    <td>${url.getCreatedAt()}</td>
+                    <td>${url.getCreatedAt().toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}</td>
                 </tr>
             @endfor
         </tbody>
     </table>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

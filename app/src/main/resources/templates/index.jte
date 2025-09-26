@@ -1,33 +1,28 @@
-@template()
 @param String flash
 @param String flashType
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>URL Analyzer</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>URL Shortener</title>
+    <style>
+        .alert-success { color: green; }
+        .alert-danger { color: red; }
+    </style>
 </head>
-<body class="container mt-5">
-    <h1 class="text-primary">URL Analyzer 🚀</h1>
-
-    <!-- Flash-сообщения -->
+<body>
     @if(flash != null)
-        <div class="alert @if(flashType.equals("success"))alert-success@else alert-danger@endif alert-dismissible fade show" role="alert">
+        <div class="alert alert-${flashType}">
             ${flash}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <!-- Форма для ввода URL -->
+    <h1>Add URL</h1>
     <form action="/urls" method="post">
-        <div class="mb-3">
-            <label for="url" class="form-label">Enter URL</label>
-            <input type="text" class="form-control" id="url" name="url" placeholder="https://example.com" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Analyze</button>
+        <label for="url">URL:</label>
+        <input type="text" id="url" name="url" placeholder="https://example.com" required>
+        <button type="submit">Submit</button>
     </form>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
