@@ -19,7 +19,7 @@
                 </tr>
             </thead>
             <tbody>
-                @for (url in urls)
+                @for(hexlet.code.models.Url url : urls)
                     <tr>
                         <td>${url.getId()}</td>
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>

@@ -9,9 +9,9 @@
 <body>
     <div class="container mt-5">
         <h1>URL: ${url.getName()}</h1>
-        @if (ctx.flash() != null)
-            <div class="alert alert-${ctx.flashType()} alert-dismissible fade show" role="alert">
-                ${ctx.flash()}
+        @if (ctx.attribute("flash") != null)
+            <div class="alert alert-${ctx.attribute("flashType")} alert-dismissible fade show" role="alert">
+                ${ctx.attribute("flash")}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
@@ -33,7 +33,7 @@
                 </tr>
             </thead>
             <tbody>
-                @for (check in checks)
+                @for(hexlet.code.models.UrlCheck check : checks)
                     <tr>
                         <td>${check.getId()}</td>
                         <td>${check.getStatusCode()}</td>
