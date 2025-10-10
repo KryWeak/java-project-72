@@ -91,7 +91,8 @@ public class App {
             List<Url> urls = UrlRepository.findAll();
             Map<Long, UrlCheck> latestChecks = new HashMap<>();
             for (Url url : urls) {
-                UrlCheckRepository.findLatestByUrlId(url.getId()).ifPresent(check -> latestChecks.put(url.getId(), check));
+                UrlCheckRepository.findLatestByUrlId(url.getId())
+                        .ifPresent(check -> latestChecks.put(url.getId(), check));
             }
             Map<String, Object> model = Map.of(
                     "urls", urls,

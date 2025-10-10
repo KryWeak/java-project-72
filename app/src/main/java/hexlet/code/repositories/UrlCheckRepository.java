@@ -1,18 +1,18 @@
 package hexlet.code.repositories;
 
 import hexlet.code.models.UrlCheck;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class UrlCheckRepository extends BaseRepository {
     public static void save(UrlCheck check) throws SQLException {
-        String sql = "INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        String sql = "INSERT INTO url_checks (url_id, status_code, title, h1, description, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.prepareStatement(sql, new String[]{"id"})) {
             stmt.setLong(1, check.getUrlId());
             stmt.setInt(2, check.getStatusCode());
             stmt.setString(3, check.getTitle());
@@ -20,7 +20,7 @@ public class UrlCheckRepository extends BaseRepository {
             stmt.setString(5, check.getDescription());
             stmt.setTimestamp(6, check.getCreatedAt());
             stmt.executeUpdate();
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
+            var generatedKeys = stmt.getGeneratedKeys();
             if (generatedKeys.next()) {
                 check.setId(generatedKeys.getLong(1));
             }
@@ -29,20 +29,20 @@ public class UrlCheckRepository extends BaseRepository {
 
     public static List<UrlCheck> findByUrlId(Long urlId) throws SQLException {
         String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC";
-        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql)) {
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, urlId);
-            ResultSet rs = stmt.executeQuery();
+            var resultSet = stmt.executeQuery();
             List<UrlCheck> checks = new ArrayList<>();
-            while (rs.next()) {
-                UrlCheck check = new UrlCheck(
-                        rs.getLong("url_id"),
-                        rs.getInt("status_code"),
-                        rs.getString("title"),
-                        rs.getString("h1"),
-                        rs.getString("description"),
-                        rs.getTimestamp("created_at")
-                );
-                check.setId(rs.getLong("id"));
+            while (resultSet.next()) {
+                Long id = resultSet.getLong("id");
+                int statusCode = resultSet.getInt("status_code");
+                String title = resultSet.getString("title");
+                String h1 = resultSet.getString("h1");
+                String description = resultSet.getString("description");
+                var createdAt = resultSet.getTimestamp("created_at");
+                var check = new UrlCheck(urlId, statusCode, title, h1, description, createdAt);
+                check.setId(id);
                 checks.add(check);
             }
             return checks;
@@ -51,19 +51,19 @@ public class UrlCheckRepository extends BaseRepository {
 
     public static Optional<UrlCheck> findLatestByUrlId(Long urlId) throws SQLException {
         String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1";
-        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql)) {
+        try (var conn = dataSource.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, urlId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                UrlCheck check = new UrlCheck(
-                        rs.getLong("url_id"),
-                        rs.getInt("status_code"),
-                        rs.getString("title"),
-                        rs.getString("h1"),
-                        rs.getString("description"),
-                        rs.getTimestamp("created_at")
-                );
-                check.setId(rs.getLong("id"));
+            var resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                Long id = resultSet.getLong("id");
+                int statusCode = resultSet.getInt("status_code");
+                String title = resultSet.getString("title");
+                String h1 = resultSet.getString("h1");
+                String description = resultSet.getString("description");
+                var createdAt = resultSet.getTimestamp("created_at");
+                var check = new UrlCheck(urlId, statusCode, title, h1, description, createdAt);
+                check.setId(id);
                 return Optional.of(check);
             }
             return Optional.empty();
