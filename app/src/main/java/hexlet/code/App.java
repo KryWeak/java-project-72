@@ -2,122 +2,136 @@ package hexlet.code;
 
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
+import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.models.Url;
-import hexlet.code.repositories.Database;
+import hexlet.code.models.UrlCheck;
+import hexlet.code.repositories.UrlCheckRepository;
 import hexlet.code.repositories.UrlRepository;
 import io.javalin.Javalin;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.rendering.template.JavalinJte;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URL;
+import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public final class App {
+public class App {
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     private static TemplateEngine createTemplateEngine() {
-        // Используем precompiled шаблоны для runtime в JRE
-        return TemplateEngine.createPrecompiled(ContentType.Html);
+        ClassLoader classLoader = App.class.getClassLoader();
+        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
+        return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 
-    public static Javalin getApp() {
-        DatabaseInitializer.init();
-
+    public static Javalin getApp() throws SQLException {
+        DatabaseInitializer.initialize();
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
+            config.bundledPlugins.enableDevLogging();
         });
 
-        UrlRepository urlRepository = new UrlRepository(Database.getDataSource());
-
-        app.get("/", ctx -> {
-            Map<String, Object> model = new HashMap<>();
-            model.put("flash", ctx.sessionAttribute("flash"));
-            model.put("flashType", ctx.sessionAttribute("flash-type"));
-            ctx.sessionAttribute("flash", null);
-            ctx.sessionAttribute("flash-type", null);
-            ctx.render("index.jte", model);
-        });
+        app.get("/", ctx -> ctx.render("index.jte"));
 
         app.post("/urls", ctx -> {
             String inputUrl = ctx.formParam("url");
-            if (inputUrl == null || inputUrl.isBlank()) {
-                ctx.sessionAttribute("flash", "Некорректный URL");
-                ctx.sessionAttribute("flash-type", "danger");
+            if (inputUrl == null || inputUrl.isEmpty()) {
+                ctx.sessionAttribute("flash", "URL cannot be empty");
+                ctx.sessionAttribute("flashType", "danger");
                 ctx.redirect("/");
                 return;
             }
 
-            String normalizedUrl;
             try {
-                URI uri = new URI(inputUrl);
-                URL url = uri.toURL();
-                StringBuilder urlBuilder = new StringBuilder();
-                urlBuilder.append(url.getProtocol()).append("://").append(url.getHost());
-                if (url.getPort() != -1) {
-                    urlBuilder.append(":").append(url.getPort());
+                URL url = new URI(inputUrl).toURL();
+                String normalizedUrl = String.format("%s://%s%s", url.getProtocol(), url.getHost(),
+                        url.getPort() == -1 ? "" : ":" + url.getPort());
+                Optional<Url> existingUrl = UrlRepository.findByName(normalizedUrl);
+                if (existingUrl.isPresent()) {
+                    ctx.sessionAttribute("flash", "Страница уже существует");
+                    ctx.sessionAttribute("flashType", "info");
+                } else {
+                    Url newUrl = new Url(normalizedUrl, new Timestamp(System.currentTimeMillis()));
+                    UrlRepository.save(newUrl);
+                    ctx.sessionAttribute("flash", "Страница успешно добавлена");
+                    ctx.sessionAttribute("flashType", "success");
                 }
-                normalizedUrl = urlBuilder.toString();
+                ctx.redirect("/urls");
             } catch (Exception e) {
                 ctx.sessionAttribute("flash", "Некорректный URL");
-                ctx.sessionAttribute("flash-type", "danger");
+                ctx.sessionAttribute("flashType", "danger");
                 ctx.redirect("/");
-                return;
             }
-
-            if (urlRepository.findByName(normalizedUrl).isPresent()) {
-                ctx.sessionAttribute("flash", "Страница уже существует");
-                ctx.sessionAttribute("flash-type", "danger");
-                ctx.redirect("/");
-                return;
-            }
-
-            // Используем конструктор с параметрами вместо конструктора по умолчанию
-            Url newUrl = new Url(null, normalizedUrl, Timestamp.from(Instant.now()));
-            urlRepository.save(newUrl);
-
-            ctx.sessionAttribute("flash", "Страница успешно добавлена");
-            ctx.sessionAttribute("flash-type", "success");
-            ctx.redirect("/urls");
         });
 
         app.get("/urls", ctx -> {
-            List<Url> urls = urlRepository.findAll();
-            Map<String, Object> model = new HashMap<>();
-            model.put("urls", urls);
-            model.put("flash", ctx.sessionAttribute("flash"));
-            model.put("flashType", ctx.sessionAttribute("flash-type"));
-            ctx.sessionAttribute("flash", null);
-            ctx.sessionAttribute("flash-type", null);
-            ctx.render("urls/index.jte", model);
+            List<Url> urls = UrlRepository.findAll();
+            Map<Long, UrlCheck> latestChecks = new HashMap<>();
+            for (Url url : urls) {
+                UrlCheckRepository.findLatestByUrlId(url.getId()).ifPresent(check -> latestChecks.put(url.getId(), check));
+            }
+            ctx.attribute("urls", urls);
+            ctx.attribute("latestChecks", latestChecks);
+            ctx.render("urls/index.jte");
         });
 
         app.get("/urls/{id}", ctx -> {
             Long id = ctx.pathParamAsClass("id", Long.class).get();
-            Url url = urlRepository.findById(id)
-                    .orElseThrow(() -> new NotFoundResponse("URL not found"));
-            ctx.render("urls/show.jte", Collections.singletonMap("url", url));
+            Url url = UrlRepository.findById(id).orElseThrow(() -> new NotFoundResponse("URL not found"));
+            List<UrlCheck> checks = UrlCheckRepository.findByUrlId(id);
+            ctx.attribute("url", url);
+            ctx.attribute("checks", checks);
+            ctx.render("urls/show.jte");
+        });
+
+        app.post("/urls/{id}/checks", ctx -> {
+            Long id = ctx.pathParamAsClass("id", Long.class).get();
+            Url url = UrlRepository.findById(id).orElseThrow(() -> new NotFoundResponse("URL not found"));
+            try {
+                HttpResponse<String> response = Unirest.get(url.getName()).asString();
+                String html = response.getBody();
+                var doc = Jsoup.parse(html);
+                String title = doc.title();
+                String h1 = doc.selectFirst("h1") != null ? doc.selectFirst("h1").text() : null;
+                String description = doc.selectFirst("meta[name=description]") != null
+                        ? doc.selectFirst("meta[name=description]").attr("content") : null;
+                UrlCheck check = new UrlCheck(id, response.getStatus(), title, h1, description,
+                        new Timestamp(System.currentTimeMillis()));
+                UrlCheckRepository.save(check);
+                ctx.sessionAttribute("flash", "Check completed successfully");
+                ctx.sessionAttribute("flashType", "success");
+            } catch (Exception e) {
+                ctx.sessionAttribute("flash", "Failed to check URL: " + e.getMessage());
+                ctx.sessionAttribute("flashType", "danger");
+            }
+            ctx.redirect("/urls/" + id);
+        });
+
+        // Передаем flash-сообщения в шаблоны и очищаем их
+        app.before(ctx -> {
+            ctx.attribute("flash", ctx.sessionAttribute("flash"));
+            ctx.attribute("flashType", ctx.sessionAttribute("flashType"));
+            ctx.sessionAttribute("flash", null); // Очищаем после использования
+            ctx.sessionAttribute("flashType", null);
         });
 
         return app;
     }
 
-    public static void main(String[] args) {
-        try {
-            Javalin app = getApp();
-            int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-            app.start(port);
-            LOGGER.info("App started on port " + port);
-        } catch (Exception e) {
-            LOGGER.error("Failed to start application", e);
-        }
+    public static void main(String[] args) throws SQLException {
+        Javalin app = getApp();
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "7070"));
+        app.start(port);
     }
 }

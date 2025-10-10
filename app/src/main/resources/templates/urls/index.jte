@@ -1,48 +1,47 @@
-@import java.util.List
-@import hexlet.code.models.Url
-@import java.time.format.DateTimeFormatter
-
-@param List<Url> urls
-@param String flash
-@param String flashType
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>URL List</title>
-    <style>
-        .alert-success { color: green; }
-        .alert-danger { color: red; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URLs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    @if(flash != null)
-        <div class="alert alert-${flashType}">
-            ${flash}
-        </div>
-    @endif
-
-    <h1>URLs</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for(Url url : urls)
+    <div class="container mt-5">
+        <h1>URLs</h1>
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>${url.getId()}</td>
-                    <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-                    <td>${url.getCreatedAt().toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}</td>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Last Check</th>
+                    <th>Status Code</th>
                 </tr>
-            @endfor
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @for (url in urls)
+                    <tr>
+                        <td>${url.getId()}</td>
+                        <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
+                        <td>
+                            @if (latestChecks.get(url.getId()) != null)
+                                ${latestChecks.get(url.getId()).getCreatedAt()}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>
+                            @if (latestChecks.get(url.getId()) != null)
+                                ${latestChecks.get(url.getId()).getStatusCode()}
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

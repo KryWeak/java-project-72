@@ -6,4 +6,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "java-project-72"
+rootProject.name = "app"

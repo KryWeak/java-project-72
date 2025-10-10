@@ -25,9 +25,14 @@ dependencies {
     implementation("io.javalin:javalin-rendering:6.6.0")
     implementation("gg.jte:jte:3.1.12")
     implementation("org.slf4j:slf4j-simple:2.0.9")
+    implementation("com.konghq:unirest-java:3.14.2")
+    implementation("org.jsoup:jsoup:1.17.2")
+    implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.26.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("io.javalin:javalin-testtools:6.6.0")
 }
 
 application {

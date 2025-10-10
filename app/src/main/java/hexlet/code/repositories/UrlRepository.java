@@ -1,106 +1,64 @@
 package hexlet.code.repositories;
 
 import hexlet.code.models.Url;
-
-import javax.sql.DataSource;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public final class UrlRepository extends BaseRepository {
-    /**
-     * Constructs a new UrlRepository with the specified DataSource.
-     *
-     * @param dataSource the DataSource to use for database operations
-     */
-    public UrlRepository(DataSource dataSource) {
-        super(dataSource);
-    }
-
-    /**
-     * Finds a URL by its name.
-     *
-     * @param name the name of the URL to find
-     * @return an Optional containing the found URL, or empty if not found
-     * @throws SQLException if a database access error occurs
-     */
-    public Optional<Url> findByName(String name) throws SQLException {
-        var sql = "SELECT * FROM urls WHERE name = ?";
-        try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, name);
-            var resultSet = stmt.executeQuery();
-            if (resultSet.next()) {
-                var id = resultSet.getLong("id");
-                var createdAt = resultSet.getTimestamp("created_at");
-                var url = new Url(id, name, createdAt);
-                return Optional.of(url);
-            }
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Saves a URL to the database.
-     *
-     * @param url the URL to save
-     * @throws SQLException if a database access error occurs
-     */
-    public void save(Url url) throws SQLException {
-        var sql = "INSERT INTO urls (name, created_at) VALUES (?, ?)";
-        try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql, new String[]{"id"})) {
+public class UrlRepository extends BaseRepository {
+    public static void save(Url url) throws SQLException {
+        String sql = "INSERT INTO urls (name, created_at) VALUES (?, ?)";
+        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, url.getName());
             stmt.setTimestamp(2, url.getCreatedAt());
             stmt.executeUpdate();
-            var generatedKeys = stmt.getGeneratedKeys();
+            ResultSet generatedKeys = stmt.getGeneratedKeys();
             if (generatedKeys.next()) {
                 url.setId(generatedKeys.getLong(1));
             }
         }
     }
 
-    /**
-     * Retrieves all URLs from the database.
-     *
-     * @return a List of all URLs
-     * @throws SQLException if a database access error occurs
-     */
-    public List<Url> findAll() throws SQLException {
-        var sql = "SELECT * FROM urls";
-        try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            var resultSet = stmt.executeQuery();
-            var result = new ArrayList<Url>();
-            while (resultSet.next()) {
-                var id = resultSet.getLong("id");
-                var name = resultSet.getString("name");
-                var createdAt = resultSet.getTimestamp("created_at");
-                var url = new Url(id, name, createdAt);
-                result.add(url);
+    public static Optional<Url> findByName(String name) throws SQLException {
+        String sql = "SELECT * FROM urls WHERE name = ?";
+        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Url url = new Url(rs.getString("name"), rs.getTimestamp("created_at"));
+                url.setId(rs.getLong("id"));
+                return Optional.of(url);
             }
-            return result;
+            return Optional.empty();
         }
     }
 
-    /**
-     * Finds a URL by its ID.
-     *
-     * @param id the ID of the URL to find
-     * @return an Optional containing the found URL, or empty if not found
-     * @throws SQLException if a database access error occurs
-     */
-    public Optional<Url> findById(Long id) throws SQLException {
-        var sql = "SELECT * FROM urls WHERE id = ?";
-        try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
+    public static List<Url> findAll() throws SQLException {
+        String sql = "SELECT * FROM urls";
+        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            List<Url> urls = new ArrayList<>();
+            while (rs.next()) {
+                Url url = new Url(rs.getString("name"), rs.getTimestamp("created_at"));
+                url.setId(rs.getLong("id"));
+                urls.add(url);
+            }
+            return urls;
+        }
+    }
+
+    public static Optional<Url> findById(Long id) throws SQLException {
+        String sql = "SELECT * FROM urls WHERE id = ?";
+        try (PreparedStatement stmt = dataSource.getConnection().prepareStatement(sql)) {
             stmt.setLong(1, id);
-            var resultSet = stmt.executeQuery();
-            if (resultSet.next()) {
-                var name = resultSet.getString("name");
-                var createdAt = resultSet.getTimestamp("created_at");
-                var url = new Url(id, name, createdAt);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Url url = new Url(rs.getString("name"), rs.getTimestamp("created_at"));
+                url.setId(rs.getLong("id"));
                 return Optional.of(url);
             }
             return Optional.empty();
