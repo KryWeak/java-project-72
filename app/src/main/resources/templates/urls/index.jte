@@ -1,3 +1,5 @@
+@param java.util.List<hexlet.code.models.Url> urls
+@param java.util.Map<java.lang.Long, hexlet.code.models.UrlCheck> latestChecks
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +27,7 @@
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
                         <td>
                             @if (latestChecks.get(url.getId()) != null)
-                                ${latestChecks.get(url.getId()).getCreatedAt()}
+                                ${latestChecks.get(url.getId()).getCreatedAt().toString()}
                             @else
                                 -
                             @endif

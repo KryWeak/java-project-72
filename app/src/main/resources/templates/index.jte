@@ -1,3 +1,5 @@
+@param java.lang.String flash
+@param java.lang.String flashType
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,9 +11,9 @@
 <body>
     <div class="container mt-5">
         <h1>URL Analyzer</h1>
-        @if (ctx.flash() != null)
-            <div class="alert alert-${ctx.flashType()} alert-dismissible fade show" role="alert">
-                ${ctx.flash()}
+        @if (flash != null)
+            <div class="alert alert-${flashType} alert-dismissible fade show" role="alert">
+                ${flash}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif

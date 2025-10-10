@@ -39,10 +39,22 @@ public class App {
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
-            config.bundledPlugins.enableDevLogging();
         });
 
-        app.get("/", ctx -> ctx.render("index.jte"));
+        app.before(ctx -> {
+            ctx.attribute("flash", ctx.sessionAttribute("flash"));
+            ctx.attribute("flashType", ctx.sessionAttribute("flashType"));
+            ctx.sessionAttribute("flash", null);
+            ctx.sessionAttribute("flashType", null);
+        });
+
+        app.get("/", ctx -> {
+            Map<String, Object> model = Map.of(
+                    "flash", ctx.attribute("flash"),
+                    "flashType", ctx.attribute("flashType")
+            );
+            ctx.render("index.jte", model);
+        });
 
         app.post("/urls", ctx -> {
             String inputUrl = ctx.formParam("url");
@@ -81,18 +93,26 @@ public class App {
             for (Url url : urls) {
                 UrlCheckRepository.findLatestByUrlId(url.getId()).ifPresent(check -> latestChecks.put(url.getId(), check));
             }
-            ctx.attribute("urls", urls);
-            ctx.attribute("latestChecks", latestChecks);
-            ctx.render("urls/index.jte");
+            Map<String, Object> model = Map.of(
+                    "urls", urls,
+                    "latestChecks", latestChecks,
+                    "flash", ctx.attribute("flash"),
+                    "flashType", ctx.attribute("flashType")
+            );
+            ctx.render("urls/index.jte", model);
         });
 
         app.get("/urls/{id}", ctx -> {
             Long id = ctx.pathParamAsClass("id", Long.class).get();
             Url url = UrlRepository.findById(id).orElseThrow(() -> new NotFoundResponse("URL not found"));
             List<UrlCheck> checks = UrlCheckRepository.findByUrlId(id);
-            ctx.attribute("url", url);
-            ctx.attribute("checks", checks);
-            ctx.render("urls/show.jte");
+            Map<String, Object> model = Map.of(
+                    "url", url,
+                    "checks", checks,
+                    "flash", ctx.attribute("flash"),
+                    "flashType", ctx.attribute("flashType")
+            );
+            ctx.render("urls/show.jte", model);
         });
 
         app.post("/urls/{id}/checks", ctx -> {
@@ -116,14 +136,6 @@ public class App {
                 ctx.sessionAttribute("flashType", "danger");
             }
             ctx.redirect("/urls/" + id);
-        });
-
-        // Передаем flash-сообщения в шаблоны и очищаем их
-        app.before(ctx -> {
-            ctx.attribute("flash", ctx.sessionAttribute("flash"));
-            ctx.attribute("flashType", ctx.sessionAttribute("flashType"));
-            ctx.sessionAttribute("flash", null); // Очищаем после использования
-            ctx.sessionAttribute("flashType", null);
         });
 
         return app;

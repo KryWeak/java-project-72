@@ -1,3 +1,7 @@
+@param hexlet.code.models.Url url
+@param java.util.List<hexlet.code.models.UrlCheck> checks
+@param java.lang.String flash
+@param java.lang.String flashType
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +13,14 @@
 <body>
     <div class="container mt-5">
         <h1>URL: ${url.getName()}</h1>
-        @if (ctx.attribute("flash") != null)
-            <div class="alert alert-${ctx.attribute("flashType")} alert-dismissible fade show" role="alert">
-                ${ctx.attribute("flash")}
+        @if (flash != null)
+            <div class="alert alert-${flashType} alert-dismissible fade show" role="alert">
+                ${flash}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
         <p>ID: ${url.getId()}</p>
-        <p>Created At: ${url.getCreatedAt()}</p>
+        <p>Created At: ${url.getCreatedAt().toString()}</p>
         <form method="post" action="/urls/${url.getId()}/checks">
             <button type="submit" class="btn btn-primary">Run Check</button>
         </form>
@@ -40,7 +44,7 @@
                         <td>${check.getTitle() != null ? check.getTitle() : "-"}</td>
                         <td>${check.getH1() != null ? check.getH1() : "-"}</td>
                         <td>${check.getDescription() != null ? check.getDescription() : "-"}</td>
-                        <td>${check.getCreatedAt()}</td>
+                        <td>${check.getCreatedAt().toString()}</td>
                     </tr>
                 @endfor
             </tbody>
