@@ -1,7 +1,10 @@
 package hexlet.code.models;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
+/**
+ * Represents a URL check result in the database.
+ */
 public final class UrlCheck {
     private Long id;
     private Long urlId;
@@ -9,19 +12,11 @@ public final class UrlCheck {
     private String title;
     private String h1;
     private String description;
-    private Timestamp createdAt;
-
-    public UrlCheck(Long urlId, int statusCode, String title, String h1, String description, Timestamp createdAt) {
-        this.urlId = urlId;
-        this.statusCode = statusCode;
-        this.title = title;
-        this.h1 = h1;
-        this.description = description;
-        this.createdAt = createdAt;
-    }
+    private LocalDateTime createdAt;
 
     /**
      * Gets the ID of the URL check.
+     *
      * @return the ID
      */
     public Long getId() {
@@ -30,6 +25,7 @@ public final class UrlCheck {
 
     /**
      * Sets the ID of the URL check.
+     *
      * @param id the ID to set
      */
     public void setId(Long id) {
@@ -37,7 +33,8 @@ public final class UrlCheck {
     }
 
     /**
-     * Gets the URL ID associated with this check.
+     * Gets the ID of the associated URL.
+     *
      * @return the URL ID
      */
     public Long getUrlId() {
@@ -45,7 +42,17 @@ public final class UrlCheck {
     }
 
     /**
-     * Gets the HTTP status code of the check.
+     * Sets the ID of the associated URL.
+     *
+     * @param urlId the URL ID to set
+     */
+    public void setUrlId(Long urlId) {
+        this.urlId = urlId;
+    }
+
+    /**
+     * Gets the HTTP status code of the URL check.
+     *
      * @return the status code
      */
     public int getStatusCode() {
@@ -53,7 +60,17 @@ public final class UrlCheck {
     }
 
     /**
+     * Sets the HTTP status code of the URL check.
+     *
+     * @param statusCode the status code to set
+     */
+    public void setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    /**
      * Gets the title of the checked page.
+     *
      * @return the title
      */
     public String getTitle() {
@@ -61,7 +78,17 @@ public final class UrlCheck {
     }
 
     /**
+     * Sets the title of the checked page.
+     *
+     * @param title the title to set
+     */
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    /**
      * Gets the H1 tag content of the checked page.
+     *
      * @return the H1 content
      */
     public String getH1() {
@@ -69,7 +96,17 @@ public final class UrlCheck {
     }
 
     /**
+     * Sets the H1 tag content of the checked page.
+     *
+     * @param h1 the H1 content to set
+     */
+    public void setH1(String h1) {
+        this.h1 = h1;
+    }
+
+    /**
      * Gets the meta description of the checked page.
+     *
      * @return the description
      */
     public String getDescription() {
@@ -77,10 +114,29 @@ public final class UrlCheck {
     }
 
     /**
-     * Gets the creation timestamp of the check.
+     * Sets the meta description of the checked page.
+     *
+     * @param description the description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * Gets the creation timestamp of the URL check.
+     *
      * @return the creation timestamp
      */
-    public Timestamp getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /**
+     * Sets the creation timestamp of the URL check.
+     *
+     * @param createdAt the creation timestamp to set
+     */
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

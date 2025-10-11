@@ -13,20 +13,23 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repo.maven.apache.org/maven2/") }
 }
 
 dependencies {
-    implementation("com.zaxxer:HikariCP:5.0.1")
-    implementation("com.h2database:h2:2.2.222")
-    implementation("org.postgresql:postgresql:42.6.0")
+    implementation("com.zaxxer:HikariCP:6.0.0")
+    implementation("com.h2database:h2:2.3.232")
+    implementation("org.postgresql:postgresql:42.7.4")
+
     implementation("io.javalin:javalin:6.6.0")
     implementation("io.javalin:javalin-bundle:6.6.0")
     implementation("io.javalin:javalin-rendering:6.6.0")
     implementation("gg.jte:jte:3.1.12")
+
     implementation("org.slf4j:slf4j-simple:2.0.9")
+
     implementation("com.konghq:unirest-java:3.14.2")
     implementation("org.jsoup:jsoup:1.17.2")
+
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -41,6 +44,7 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 checkstyle {
@@ -71,12 +75,22 @@ tasks.jacocoTestReport {
 tasks.shadowJar {
     archiveFileName.set("app-1.0.jar")
     dependsOn(tasks.precompileJte)
-    from(fileTree("build/jte-classes") {
-        include("**/*.class")
-    })
+    mergeServiceFiles()
 }
 
 jte {
     sourceDirectory.set(project.file("src/main/resources/templates").toPath())
     precompile()
+}
+
+tasks.register("runApp") {
+    dependsOn(tasks.shadowJar)
+    doLast {
+        javaexec {
+            mainClass.set("hexlet.code.App")
+            classpath = files(tasks.shadowJar.get().archiveFile)
+            environment("PORT", "7070")
+            environment("JDBC_DATABASE_URL", "jdbc:h2:mem:project;DB_CLOSE_DELAY=-1")
+        }
+    }
 }

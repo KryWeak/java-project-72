@@ -1,19 +1,18 @@
 package hexlet.code.models;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
+/**
+ * Represents a URL in the database.
+ */
 public final class Url {
     private Long id;
     private String name;
-    private Timestamp createdAt;
-
-    public Url(String name, Timestamp createdAt) {
-        this.name = name;
-        this.createdAt = createdAt;
-    }
+    private LocalDateTime createdAt;
 
     /**
      * Gets the ID of the URL.
+     *
      * @return the ID
      */
     public Long getId() {
@@ -22,6 +21,7 @@ public final class Url {
 
     /**
      * Sets the ID of the URL.
+     *
      * @param id the ID to set
      */
     public void setId(Long id) {
@@ -30,6 +30,7 @@ public final class Url {
 
     /**
      * Gets the name of the URL.
+     *
      * @return the URL name
      */
     public String getName() {
@@ -37,10 +38,29 @@ public final class Url {
     }
 
     /**
+     * Sets the name of the URL.
+     *
+     * @param name the URL name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
      * Gets the creation timestamp of the URL.
+     *
      * @return the creation timestamp
      */
-    public Timestamp getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /**
+     * Sets the creation timestamp of the URL.
+     *
+     * @param createdAt the creation timestamp to set
+     */
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
