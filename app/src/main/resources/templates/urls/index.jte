@@ -43,7 +43,7 @@ content = @`
                             </td>
                             @if(page.getUrlChecks().get(url.getId()) != null)
                                 <td>
-                                    ${BeautyTime.getBeautyTime(page.getUrlChecks().get(url.getId()).getCreatedAt())}
+                                    ${ActualTime.getActualTime(page.getUrlChecks().get(url.getId()).getCreatedAt())}
                                 </td>
                                 <td>
                                     ${page.getUrlChecks().get(url.getId()).getStatusCode()}
