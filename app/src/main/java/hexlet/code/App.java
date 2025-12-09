@@ -1,99 +1,81 @@
 package hexlet.code;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.resolve.ResourceCodeResolver;
-import hexlet.code.controller.UrlController;
-import hexlet.code.controller.UrlCheckController;
-import hexlet.code.repositories.UrlRepository;
-import hexlet.code.repositories.UrlCheckRepository;
+import hexlet.code.controller.UrlsController;
+import hexlet.code.repository.BaseRepository;
+import hexlet.code.utils.NamedRoutes;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinJte;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import javax.sql.DataSource;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.util.stream.Collectors;
 
-/**
- * Main application class for setting up and running the Javalin server.
- */
-public final class App {
-    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
-    private static Javalin appInstance = null;
+@Slf4j
+public class App {
+    public static Javalin getApp() throws SQLException, IOException {
+        var hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(getDatabaseUrl());
 
-    /**
-     * Creates and configures the Javalin application.
-     *
-     * @return the configured Javalin instance
-     */
-    public static Javalin getApp() {
-        if (appInstance == null) {
-            // Инициализация DataSource
-            DataSource dataSource = Database.getDataSource();
+        var dataSource = new HikariDataSource(hikariConfig);
+        var sql = readResourceFile("schema.sql");
+        log.info(sql);
 
-            // Инициализация репозиториев
-            UrlRepository urlRepository = new UrlRepository(dataSource);
-            UrlCheckRepository urlCheckRepository = new UrlCheckRepository(dataSource);
-
-            // Инициализация контроллеров
-            UrlController urlController = new UrlController(urlRepository, urlCheckRepository);
-            UrlCheckController urlCheckController = new UrlCheckController(urlRepository, urlCheckRepository);
-
-            // Создание движка шаблонов Jte
-            TemplateEngine templateEngine = createTemplateEngine();
-
-            // Настройка Javalin
-            appInstance = Javalin.create(config -> {
-                config.fileRenderer(new JavalinJte(templateEngine));
-                config.bundledPlugins.enableDevLogging();
-            });
-
-            // Регистрация маршрутов
-            appInstance.get("/", urlController.index);
-            appInstance.get("/urls", urlController.list);
-            appInstance.post("/urls", urlController.create);
-            appInstance.get("/urls/{id}", urlController.show);
-            appInstance.post("/urls/{id}/checks", urlCheckController.create);
+        try (var connection = dataSource.getConnection();
+             var statement = connection.createStatement()) {
+            statement.execute(sql);
         }
-        return appInstance;
+        BaseRepository.dataSource = dataSource;
+
+        var app = Javalin.create(config -> {
+            config.bundledPlugins.enableDevLogging();
+            config.fileRenderer(new JavalinJte(createTemplateEngine()));
+        });
+        app.before(ctx -> {
+            ctx.contentType("text/html; charset=utf-8");
+        });
+
+        app.get(NamedRoutes.rootPath(), UrlsController::root);
+        app.get(NamedRoutes.urlsPath(), UrlsController::index);
+        app.post(NamedRoutes.urlsPath(), UrlsController::create);
+        app.get(NamedRoutes.urlPath("{id}"), UrlsController::show);
+        app.post(NamedRoutes.urlCheckPath("{id}"), UrlsController::check);
+
+        return app;
     }
 
-    /**
-     * Main entry point to start the application.
-     *
-     * @param args command-line arguments
-     */
-    public static void main(String[] args) {
-        Javalin app = getApp();
+    private static int getPort() {
+        String port = System.getenv().getOrDefault("PORT", "7070");
+        return Integer.valueOf(port);
+    }
+    private static String getDatabaseUrl() {
+        return System.getenv().getOrDefault("JDBC_DATABASE_URL",
+                "jdbc:h2:mem:project:DB_CLOSE_DELAY=-1;");
+    }
+    private static String readResourceFile(String fileName) throws IOException {
+        var inputStream = App.class.getClassLoader().getResourceAsStream(fileName);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            return reader.lines().collect(Collectors.joining("\n"));
+        }
+    }
+    private static TemplateEngine createTemplateEngine() {
+        ClassLoader classLoader = App.class.getClassLoader();
+        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
+        TemplateEngine templateEngine = TemplateEngine.create(codeResolver, ContentType.Html);
+        return templateEngine;
+    }
+
+    public static void main(String[] args) throws SQLException, IOException {
+        var app = getApp();
         app.start(getPort());
     }
-
-    /**
-     * Retrieves the port from the environment variable or defaults to 7070.
-     *
-     * @return the port number
-     */
-    private static int getPort() {
-        String port = System.getenv("PORT");
-        if (port == null || port.isBlank()) {
-            LOGGER.info("PORT not set, defaulting to 7070");
-            return 7070;
-        }
-        try {
-            return Integer.parseInt(port);
-        } catch (NumberFormatException e) {
-            LOGGER.warn("Invalid PORT value: {}, defaulting to 7070", port);
-            return 7070;
-        }
-    }
-
-    /**
-     * Creates a Jte template engine.
-     *
-     * @return the configured TemplateEngine
-     */
-    private static TemplateEngine createTemplateEngine() {
-        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", App.class.getClassLoader());
-        return TemplateEngine.create(codeResolver, ContentType.Html);
-    }
 }
+

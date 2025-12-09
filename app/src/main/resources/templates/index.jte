@@ -1,33 +1,38 @@
-@import hexlet.code.models.Url
-@import java.util.List
+@import hexlet.code.dto.BasePage
+@param BasePage page
 
-@param String flash
-@param String flashType
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Анализатор страниц</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container">
-        <h1>Анализатор страниц</h1>
-        @if (flash != null)
-            <div class="alert alert-${flashType}">
-                ${flash}
+@template.layout.page(
+content = @`
+    @if(page.getFlash() != null)
+        <div class="alert alert-warning" role="alert">
+            <p class="m-0">${page.getFlash()}</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+        </div>
+    @endif
+    <section>
+    <div class="container text-center">
+        <div class="row">
+            <div class="col">
+                <h1>Анализатор страниц</h1>
+                <p class="lead">Бесплатно проверяйте сайты на SEO пригодность</p>
+                <form action="/urls" method="post" class="rss-form text-body">
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-floating">
+                                <input id="url-input" autofocus type="text" required name="url" aria-label="url"
+                                       class="form-control w-100" placeholder="ссылка" autocomplete="off">
+                                <label for="url-input">Ссылка</label>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="h-100 btn btn-lg btn-primary px-sm-5">Проверить</button>
+                        </div>
+                    </div>
+                </form>
+                <p class="mt-2 mb-0 text-muted">Пример: https://www.example.com</p>
             </div>
-        @endif
-        <form action="/urls" method="post">
-            <div class="mb-3">
-                <label for="url" class="form-label">URL</label>
-                <input type="text" class="form-control" id="url" name="url" placeholder="https://example.com">
-            </div>
-            <button type="submit" class="btn btn-primary">Проверить</button>
-        </form>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    </section>
+`
+)
