@@ -33,13 +33,5 @@
 
 ${content}
 
-<footer class="footer border-top py-3 mt-5 bg-light">
-    <div class="container-xl">
-        <div class="text-center">
-            created by
-            <a href="https://github.com/gerakiera" target="_blank">geraKiera</a>
-        </div>
-    </div>
-</footer>
 </body>
 </html>
