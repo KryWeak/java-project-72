@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ActualTime {
-    public static String getBeautyTime(Timestamp time) {
+    public static String getActualTime(Timestamp time) {
         LocalDateTime dateTime = time.toLocalDateTime();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String formattedDate = dateTime.format(dateFormatter);

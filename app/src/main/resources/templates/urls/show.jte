@@ -37,7 +37,7 @@ content = @`
                     </tr>
                     <tr>
                         <td>Дата создания</td>
-                        <td>${BeautyTime.getBeautyTime(page.getUrl().getCreatedAt())}</td>
+                        <td>${ActualTime.getActualTime(page.getUrl().getCreatedAt())}</td>
                     </tr>
                     </tbody>
                 </table>
@@ -77,7 +77,7 @@ content = @`
                                     ${urlCheck.getDescription()}
                                 </td>
                                 <td>
-                                    ${BeautyTime.getBeautyTime(urlCheck.getCreatedAt())}
+                                    ${ActualTime.getActualTime(urlCheck.getCreatedAt())}
                                 </td>
                             </tr>
                         @endfor
