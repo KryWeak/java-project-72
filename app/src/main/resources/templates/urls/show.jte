@@ -1,5 +1,5 @@
 @import hexlet.code.dto.UrlPage
-@import hexlet.code.utils.BeautyTime
+@import hexlet.code.utils.ActualTime
 @param UrlPage page
 
 

@@ -1,6 +1,6 @@
 @import hexlet.code.dto.UrlsPage
 @import hexlet.code.utils.NamedRoutes
-@import hexlet.code.utils.BeautyTime
+@import hexlet.code.utils.ActualTime
 @param UrlsPage page
 
 

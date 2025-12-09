@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class BeautyTime {
+public class ActualTime {
     public static String getBeautyTime(Timestamp time) {
         LocalDateTime dateTime = time.toLocalDateTime();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
