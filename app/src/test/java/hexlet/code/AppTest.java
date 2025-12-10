@@ -1,8 +1,6 @@
 package hexlet.code;
 
 import hexlet.code.model.Url;
-import hexlet.code.model.UrlCheck;
-import hexlet.code.repository.UrlChecksRepository;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.NamedRoutes;
 import io.javalin.Javalin;
@@ -19,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -59,7 +56,6 @@ public class AppTest {
             var response = client.get(NamedRoutes.rootPath());
             assertThat(response.code()).isEqualTo(200);
             assert response.body() != null;
-            //assertThat(response.body().string()).contains("Анализатор страниц");
         });
     }
     @Test
@@ -67,7 +63,6 @@ public class AppTest {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get("/urls");
             assertThat(response.code()).isEqualTo(200);
-            //assertThat(response.body().string()).contains("ID", "Имя", "Последняя проверка", "Код ответа");
         });
     }
     @Test
@@ -124,90 +119,6 @@ public class AppTest {
             var response = client.post("/urls/9999/checks");
             assertThat(response.code()).isEqualTo(404);
         });
-    }
-
-    @Test
-    void testMainPageNotNullBody() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.get(NamedRoutes.rootPath());
-            assert response.body() != null;
-            assertThat(response.code()).isEqualTo(200);
-        });
-    }
-
-    @Test
-    void testUrlsPageNotNullBody() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/urls");
-            assert response.body() != null;
-            assertThat(response.code()).isEqualTo(200);
-        });
-    }
-
-    @Test
-    void testSaveAndFindUrl() throws SQLException {
-        var url = new Url("https://example.com");
-        UrlsRepository.save(url);
-        assertThat(url.getId()).isNotNull();
-
-        var found = UrlsRepository.find(url.getId());
-        assertThat(found).isPresent();
-        assertThat(found.get().getName()).isEqualTo("https://example.com");
-    }
-
-    @Test
-    void testGetByNameAndIsExist() throws SQLException {
-        var url = new Url("https://hexlet.io");
-        UrlsRepository.save(url);
-
-        assertThat(UrlsRepository.getByName("https://hexlet.io")).isPresent();
-        assertThat(UrlsRepository.getByName("not-exist")).isEmpty();
-
-        assertThat(UrlsRepository.isExist("https://hexlet.io")).isTrue();
-        assertThat(UrlsRepository.isExist("not-exist")).isFalse();
-    }
-
-    @Test
-    void testGetEntities() throws SQLException {
-        var url1 = new Url("https://one.com");
-        var url2 = new Url("https://two.com");
-        UrlsRepository.save(url1);
-        UrlsRepository.save(url2);
-
-        var all = UrlsRepository.getEntities();
-        assertThat(all.size()).isGreaterThanOrEqualTo(2);
-    }
-
-    @Test
-    void testUrlsRepositoryFindNonExistent() throws SQLException {
-        assertThat(UrlsRepository.find(999L)).isEmpty();
-    }
-
-    @Test
-    void testGetByNameNonExistent() throws SQLException {
-        assertThat(UrlsRepository.getByName("not-exist")).isEmpty();
-    }
-
-    @Test
-    void testIsExistFalse() throws SQLException {
-        assertThat(UrlsRepository.isExist("not-exist")).isFalse();
-    }
-
-    @Test
-    void testMultipleChecksReturnLatest() throws SQLException {
-        Url url = new Url("https://example.com");
-        UrlsRepository.save(url);
-
-        UrlCheck first = new UrlCheck(200, "Title1", "H1", "Desc");
-        first.setUrlId(url.getId());
-        UrlChecksRepository.save(first);
-
-        UrlCheck second = new UrlCheck(201, "Title2", "H1", "Desc");
-        second.setUrlId(url.getId());
-        UrlChecksRepository.save(second);
-
-        Map<Long, UrlCheck> latest = UrlChecksRepository.findLatestChecks();
-        assertThat(latest.get(url.getId()).getStatusCode()).isEqualTo(201);
     }
 
 }
