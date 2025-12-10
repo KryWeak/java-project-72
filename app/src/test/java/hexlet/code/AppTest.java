@@ -102,4 +102,24 @@ public class AppTest {
         assertThat(UrlsRepository.getEntities().size()).isEqualTo(2);
     }
 
+    @Test
+    void testGetNonExistentUrlById() {
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.get("/urls/9999");
+            assertThat(response.code()).isEqualTo(404);
+        });
+    }
+
+    @Test
+    void testGetNonExistentUrlByName() throws SQLException {
+        assertThat(UrlsRepository.getByName("non-existent")).isEmpty();
+    }
+
+    @Test
+    void testCheckNonExistentUrl() {
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.post("/urls/9999/checks");
+            assertThat(response.code()).isEqualTo(404);
+        });
+    }
 }
