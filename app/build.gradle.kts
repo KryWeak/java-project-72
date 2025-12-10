@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.kotlin.dsl.application
 
 plugins {
     application
@@ -7,6 +8,7 @@ plugins {
     id("io.freefair.lombok") version "8.6"
     id("com.github.ben-manes.versions") version "0.51.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("org.sonarqube") version "7.2.0.6526"
     jacoco
 }
 
@@ -46,8 +48,6 @@ tasks.test {
     testLogging {
         exceptionFormat = TestExceptionFormat.FULL
         events = mutableSetOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
-        // showStackTraces = true
-        // showCauses = true
         showStandardStreams = true
     }
     finalizedBy(tasks.jacocoTestReport)
@@ -56,5 +56,12 @@ tasks.test {
 tasks.jacocoTestReport {
     reports {
         xml.required.set(true)
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "KryWeak_java-project-72")
+        property("sonar.organization", "kryweak")
     }
 }
