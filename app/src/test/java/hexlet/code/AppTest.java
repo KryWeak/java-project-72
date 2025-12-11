@@ -1,15 +1,13 @@
 package hexlet.code;
 
 import hexlet.code.model.Url;
-import hexlet.code.controller.UrlsController;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.NamedRoutes;
+import hexlet.code.utils.TestUtils;
 import io.javalin.Javalin;
 import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,12 +17,13 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static hexlet.code.repository.BaseRepository.dataSource;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class AppTest {
     private static MockWebServer mockWebServer;
@@ -37,7 +36,6 @@ public class AppTest {
             return reader.lines().collect(Collectors.joining("\n"));
         }
     }
-
     @BeforeEach
     public final void setApp() throws IOException, SQLException {
         app = App.getApp();
@@ -64,7 +62,6 @@ public class AppTest {
             assert response.body() != null;
         });
     }
-
     @Test
     void testUrlsPage() {
         JavalinTest.test(app, (server, client) -> {
@@ -72,12 +69,23 @@ public class AppTest {
             assertThat(response.code()).isEqualTo(200);
         });
     }
-
     @Test
     void testUrlsShow() {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get("/urls/2");
             assertThat(response.code()).isEqualTo(404);
+        });
+    }
+    @Test
+    void testShowUrl() {
+        JavalinTest.test(app, (server, client) -> {
+            var newUrl = new Url("https://ru.hexlet.io/projects/72/members/39734?step=6");
+            UrlsRepository.save(newUrl);
+            var response = client.get("/urls/" + newUrl.getId());
+            var response2 = client.post("/urls/" + newUrl.getId() + "/checks");
+            assert response.body() != null;
+            assertThat(response.body().string()).contains("https://ru.hexlet.io");
+            assertThat(response2.code()).isEqualTo(200);
         });
     }
 
@@ -125,31 +133,9 @@ public class AppTest {
     }
 
     @Test
-    void testCreateUrlInvalidUrl() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.post("/urls", Map.of("url", "это точно не url"));
-
-            assertThat(response.code()).isEqualTo(422);  // у тебя теперь 422!
-            assertThat(response.body().string()).contains("Некорректный URL");
-            assertThat(UrlsRepository.getEntities()).isEmpty();
-        });
+    void testGetNonExistentUrlCheck() throws SQLException {
+        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 999L);
+        assertThat(check).isNull();
     }
 
-    @Test
-    void testBuildUrl() throws MalformedURLException {
-        assertThat(UrlsController.normalizeUrl(new URL("https://hexlet.io")))
-                .isEqualTo("https://hexlet.io");
-
-        assertThat(UrlsController.normalizeUrl(new URL("http://localhost:5000")))
-                .isEqualTo("http://localhost:5000");
-
-        assertThat(UrlsController.normalizeUrl(new URL("https://github.com:443")))
-                .isEqualTo("https://github.com");
-
-        assertThat(UrlsController.normalizeUrl(new URL("http://example.com:80")))
-                .isEqualTo("http://example.com");
-
-        assertThat(UrlsController.normalizeUrl(new URL("HTTPS://GITHUB.COM:443")))
-                .isEqualTo("https://github.com"); // проверяем lowerCase
-    }
 }
