@@ -140,7 +140,7 @@ public class AppTest {
 
     @Test
     void testAddAndGetUrlCheck() throws SQLException {
-        String testUrl = "https://check.com";
+        String localTestUrl = "https://check.com";
         TestUtils.addUrl(dataSource, testUrl);
 
         Map<String, Object> url = TestUtils.getUrlByName(dataSource, testUrl);
