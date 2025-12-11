@@ -13,23 +13,21 @@ import io.javalin.http.NotFoundResponse;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
 
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.SQLException;
-import java.util.Collections;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
 public class UrlsController {
+
     public static void root(Context ctx) {
         var page = new BasePage();
         page.setFlash(ctx.consumeSessionAttribute("flash"));
         ctx.render("index.jte", model("page", page));
     }
+
     public static void index(Context ctx) throws SQLException {
         var page = new UrlsPage(UrlsRepository.getEntities(),
                 UrlChecksRepository.findLatestChecks());
@@ -50,59 +48,80 @@ public class UrlsController {
     }
 
     public static void create(Context ctx) throws SQLException {
-        try {
-            var name = buildUrl(new URI(ctx.formParamAsClass("url", String.class).getOrDefault("")).toURL());
+        String inputUrl = ctx.formParam("url") == null ? "" : ctx.formParam("url").trim();
 
-            if (UrlsRepository.isExist(name)) {
+        try {
+            URL url = new URL(inputUrl);
+            String normalizedUrl = normalizeUrl(url);
+
+            if (UrlsRepository.isExist(normalizedUrl)) {
                 ctx.sessionAttribute("flash", "Страница уже существует");
                 ctx.sessionAttribute("flashType", "info");
-                ctx.redirect(NamedRoutes.urlsPath());
             } else {
-                Url url = new Url(name);
-                UrlsRepository.save(url);
+                var newUrl = new Url(normalizedUrl);
+                UrlsRepository.save(newUrl);
                 ctx.sessionAttribute("flash", "Страница успешно добавлена");
                 ctx.sessionAttribute("flashType", "correct");
-                ctx.redirect(NamedRoutes.urlsPath());
             }
-        } catch (IllegalArgumentException | MalformedURLException | URISyntaxException e) {
+            ctx.redirect(NamedRoutes.urlsPath());
+
+        } catch (MalformedURLException e) {
             var page = new BasePage();
             page.setFlash("Некорректный URL");
             page.setFlashType("error");
-            ctx.status(400);
-            ctx.render("index.jte", Collections.singletonMap("page", page));
+            ctx.status(422);
+            ctx.render("index.jte", model("page", page));
         }
     }
-    static String buildUrl(URL url) {
-        var protocol = url.getProtocol().isEmpty() ? "" : url.getProtocol();
-        String host = url.getHost().isEmpty() ? "" : url.getHost();
-        String port = url.getPort() == -1 ? "" : ":" + url.getPort();
-        return String.format("%s://%s%s", protocol, host, port);
+
+    public static String normalizeUrl(URL url) {
+        String protocol = url.getProtocol().toLowerCase();
+        String host = url.getHost().toLowerCase();
+        int port = url.getPort();
+
+        if (port == -1) {
+            if ("http".equals(protocol)) {
+                port = 80;
+            }
+            if ("https".equals(protocol)) {
+                port = 443;
+            }
+        }
+
+        String portPart = (port == 80 && "http".equals(protocol)) || (port == 443 && "https".equals(protocol))
+                ? ""
+                : ":" + port;
+
+        return protocol + "://" + host + portPart;
     }
 
     public static void check(Context ctx) throws SQLException {
         var urlId = ctx.pathParamAsClass("id", Long.class).get();
         var url = UrlsRepository.find(urlId)
                 .orElseThrow(() -> new NotFoundResponse("Url not found"));
+
         try {
             HttpResponse<String> response = Unirest.get(url.getName()).asString();
-            var codeResponse = response.getStatus();
+            int statusCode = response.getStatus();
             var doc = Jsoup.parse(response.getBody());
-            var title = doc.title();
-            Element h1Element = doc.selectFirst("h1");
-            var h1 = h1Element == null ? "" : h1Element.ownText();
 
-            Element descriptionEl = doc.selectFirst("meta[name=description]");
-            var description = descriptionEl == null ? "" : descriptionEl.attr("content");
+            String title = doc.title();
+            String h1 = doc.selectFirst("h1") == null ? "" : doc.selectFirst("h1").ownText();
+            String description = doc.selectFirst("meta[name=description]") == null
+                    ? "" : doc.selectFirst("meta[name=description]").attr("content");
 
-            var urlCheck = new UrlCheck(codeResponse, title, h1, description);
-            urlCheck.setUrlId(url.getId());
-            UrlChecksRepository.save(urlCheck);
+            var check = new UrlCheck(statusCode, title, h1, description);
+            check.setUrlId(urlId);
+            UrlChecksRepository.save(check);
+
             ctx.sessionAttribute("flash", "Страница успешно проверена");
             ctx.sessionAttribute("flashType", "correct");
+
         } catch (Exception e) {
             ctx.sessionAttribute("flash", "Некорректный адрес");
             ctx.sessionAttribute("flashType", "error");
         }
+
         ctx.redirect(NamedRoutes.urlPath(urlId));
     }
 }
