@@ -4,7 +4,6 @@ import hexlet.code.model.Url;
 import hexlet.code.controller.UrlsController;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.NamedRoutes;
-import hexlet.code.utils.TestUtils;
 import io.javalin.Javalin;
 import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
@@ -26,8 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static hexlet.code.repository.BaseRepository.dataSource;
 
 public class AppTest {
     private static MockWebServer mockWebServer;
