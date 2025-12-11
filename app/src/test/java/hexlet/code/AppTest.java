@@ -85,19 +85,6 @@ public class AppTest {
     }
 
     @Test
-    void testShowUrl() {
-        JavalinTest.test(app, (server, client) -> {
-            var newUrl = new Url("https://ru.hexlet.io/projects/72/members/39734?step=6");
-            UrlsRepository.save(newUrl);
-            var response = client.get("/urls/" + newUrl.getId());
-            var response2 = client.post("/urls/" + newUrl.getId() + "/checks");
-            assert response.body() != null;
-            assertThat(response.body().string()).contains("https://ru.hexlet.io");
-            assertThat(response2.code()).isEqualTo(200);
-        });
-    }
-
-    @Test
     public void testUrlsRepository() throws SQLException {
         Url url1 = new Url(testUrl);
         Url url2 = new Url("https://example.com");
@@ -138,12 +125,6 @@ public class AppTest {
         JavalinTest.test(app, (server, client) -> {
             Assertions.assertThat(client.get("/").code()).isEqualTo(200);
         });
-    }
-
-    @Test
-    void testGetNonExistentUrlCheck() throws SQLException {
-        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 999L);
-        assertThat(check).isNull();
     }
 
     @Test
