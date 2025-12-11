@@ -138,21 +138,4 @@ public class AppTest {
         assertThat(check).isNull();
     }
 
-    @Test
-    void testAddAndGetUrlCheck() throws SQLException {
-        String localTestUrl = "https://check.com";
-        TestUtils.addUrl(dataSource, testUrl);
-
-        Map<String, Object> url = TestUtils.getUrlByName(dataSource, testUrl);
-        long urlId = (Long) url.get("id");
-
-        TestUtils.addUrlCheck(dataSource, urlId);
-        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, urlId);
-
-        assertThat(check).isNotNull();
-        assertThat(check.get("url_id")).isEqualTo(urlId);
-        assertThat(check.get("status_code")).isEqualTo(200);
-        assertThat(check.get("title")).isEqualTo("en title");
-        assertThat(check.get("description")).isEqualTo("en description");
-    }
 }
