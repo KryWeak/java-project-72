@@ -72,7 +72,7 @@ public class UrlsController {
             ctx.render("index.jte", Collections.singletonMap("page", page));
         }
     }
-    private static String buildUrl(URL url) {
+    static String buildUrl(URL url) {
         var protocol = url.getProtocol().isEmpty() ? "" : url.getProtocol();
         String host = url.getHost().isEmpty() ? "" : url.getHost();
         String port = url.getPort() == -1 ? "" : ":" + url.getPort();

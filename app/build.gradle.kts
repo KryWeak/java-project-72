@@ -39,6 +39,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation ("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.mockito:mockito-core:5.10.0")
     implementation ("org.jsoup:jsoup:1.17.2")
     implementation ("com.konghq:unirest-java:3.13.0")
 }

@@ -3,10 +3,12 @@ package hexlet.code;
 import hexlet.code.model.Url;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.NamedRoutes;
+import hexlet.code.utils.TestUtils;
 import io.javalin.Javalin;
 import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,8 +19,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static hexlet.code.repository.BaseRepository.dataSource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class AppTest {
@@ -121,4 +125,34 @@ public class AppTest {
         });
     }
 
+    @Test
+    void testIndex() {
+        JavalinTest.test(app, (server, client) -> {
+            Assertions.assertThat(client.get("/").code()).isEqualTo(200);
+        });
+    }
+
+    @Test
+    void testGetNonExistentUrlCheck() throws SQLException {
+        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 999L);
+        assertThat(check).isNull();
+    }
+
+    @Test
+    void testAddAndGetUrlCheck() throws SQLException {
+        String testUrl = "https://check.com";
+        TestUtils.addUrl(dataSource, testUrl);
+
+        Map<String, Object> url = TestUtils.getUrlByName(dataSource, testUrl);
+        long urlId = (Long) url.get("id");
+
+        TestUtils.addUrlCheck(dataSource, urlId);
+        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, urlId);
+
+        assertThat(check).isNotNull();
+        assertThat(check.get("url_id")).isEqualTo(urlId);
+        assertThat(check.get("status_code")).isEqualTo(200);
+        assertThat(check.get("title")).isEqualTo("en title");
+        assertThat(check.get("description")).isEqualTo("en description");
+    }
 }
