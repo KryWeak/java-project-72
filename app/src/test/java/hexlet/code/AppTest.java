@@ -1,6 +1,8 @@
 package hexlet.code;
 
 import hexlet.code.model.Url;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlChecksRepository;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.NamedRoutes;
 import hexlet.code.utils.TestUtils;
@@ -19,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -59,7 +63,7 @@ public class AppTest {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get(NamedRoutes.rootPath());
             assertThat(response.code()).isEqualTo(200);
-            assert response.body() != null;
+            assertThat(response.body()).isNotNull();
         });
     }
     @Test
@@ -76,16 +80,33 @@ public class AppTest {
             assertThat(response.code()).isEqualTo(404);
         });
     }
+
     @Test
-    void testShowUrl() {
+    void testShowUrl() throws Exception {
+        app = App.getApp();
+
+        Url url = new Url("http://localhost:54391/");
+        url.setCreatedAt(LocalDateTime.of(2026, 2, 12, 3, 28));
+        UrlsRepository.save(url);
+
+        UrlCheck urlCheck = new UrlCheck(
+                200,
+                "Test Title",
+                "Test H1",
+                "Test Description"
+        );
+        urlCheck.setUrlId(url.getId());
+        urlCheck.setCreatedAt(Timestamp.valueOf(LocalDateTime.of(2026, 2, 12, 3, 28)));
+        UrlChecksRepository.save(urlCheck);
+
         JavalinTest.test(app, (server, client) -> {
-            var newUrl = new Url("https://ru.hexlet.io/projects/72/members/39734?step=6");
-            UrlsRepository.save(newUrl);
-            var response = client.get("/urls/" + newUrl.getId());
-            var response2 = client.post("/urls/" + newUrl.getId() + "/checks");
-            assert response.body() != null;
-            assertThat(response.body().string()).contains("https://ru.hexlet.io");
-            assertThat(response2.code()).isEqualTo(200);
+            var response = client.get("/urls/" + url.getId());
+            assertThat(response.code()).isEqualTo(200);
+            String body = response.body().string();
+
+            assertThat(body).contains("Test Title");
+            assertThat(body).contains("Test H1");
+            assertThat(body).contains("Test Description");
         });
     }
 
@@ -93,14 +114,18 @@ public class AppTest {
     public void testUrlsRepository() throws SQLException {
         Url url1 = new Url(testUrl);
         Url url2 = new Url("https://example.com");
+
         UrlsRepository.save(url1);
         UrlsRepository.save(url2);
+
         Url foundUrl1 = UrlsRepository.getByName(testUrl)
                 .orElseThrow(() -> new AssertionError("URL not found"));
         assertThat(url1.getName()).isEqualTo(foundUrl1.getName());
-        Url foundUrl2 = UrlsRepository.find(2L)
+
+        Url foundUrl2 = UrlsRepository.find(url2.getId())
                 .orElseThrow(() -> new AssertionError("URL not found"));
         assertThat(url2.getName()).isEqualTo(foundUrl2.getName());
+
         assertThat(UrlsRepository.getEntities().size()).isEqualTo(2);
     }
 

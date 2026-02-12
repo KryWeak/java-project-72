@@ -66,7 +66,7 @@ public class App {
             return reader.lines().collect(Collectors.joining("\n"));
         }
     }
-    private static TemplateEngine createTemplateEngine() {
+    static TemplateEngine createTemplateEngine() {
         ClassLoader classLoader = App.class.getClassLoader();
         ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
         TemplateEngine templateEngine = TemplateEngine.create(codeResolver, ContentType.Html);
@@ -78,4 +78,3 @@ public class App {
         app.start(getPort());
     }
 }
-

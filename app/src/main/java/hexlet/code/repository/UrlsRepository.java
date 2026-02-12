@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public class UrlsRepository extends BaseRepository {
     public static void save(Url url) throws SQLException {
@@ -15,9 +16,11 @@ public class UrlsRepository extends BaseRepository {
         try (var connection = dataSource.getConnection();
              var preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            Timestamp createdAt = new Timestamp(System.currentTimeMillis());
+            var createdAt = LocalDateTime.now();
+            url.setCreatedAt(createdAt);
+
             preparedStatement.setString(1, url.getName());
-            preparedStatement.setTimestamp(2, createdAt);
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(createdAt));
             preparedStatement.executeUpdate();
 
             var generatedKeys = preparedStatement.getGeneratedKeys();
@@ -29,6 +32,7 @@ public class UrlsRepository extends BaseRepository {
             }
         }
     }
+
     public static Optional<Url> find(Long id) throws SQLException {
         var sql = "SELECT * FROM urls WHERE id = ?";
         try (var connection = dataSource.getConnection();
@@ -37,8 +41,8 @@ public class UrlsRepository extends BaseRepository {
             var resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 var name = resultSet.getString("name");
-                var createdAt = resultSet.getTimestamp("created_at");
-                var url = new Url(name);
+                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
+                var url = new Url(id, name);
                 url.setCreatedAt(createdAt);
                 url.setId(id);
                 return Optional.of(url);
@@ -56,7 +60,7 @@ public class UrlsRepository extends BaseRepository {
             while (resultSet.next()) {
                 var id = resultSet.getLong("id");
                 var name = resultSet.getString("name");
-                var createdAt = resultSet.getTimestamp("created_at");
+                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
                 var url = new Url(id, name);
                 url.setCreatedAt(createdAt);
                 result.add(url);
@@ -71,12 +75,14 @@ public class UrlsRepository extends BaseRepository {
             stmt.setString(1, name);
             var resultSet = stmt.executeQuery();
             if (resultSet.next()) {
-                var url = new Url(name);
+                var id = resultSet.getLong("id");
+                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
+                var url = new Url(id, name);
+                url.setCreatedAt(createdAt);
                 return Optional.of(url);
-            } else {
-                return Optional.empty();
             }
         }
+        return Optional.empty();
     }
 
     public static boolean isExist(String urlName) throws SQLException {

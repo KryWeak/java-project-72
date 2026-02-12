@@ -1,5 +1,3 @@
-.DEFAULT_GOAL := build-run
-
 run-dist:
 	./build/install/app/bin/app
 
@@ -7,8 +5,7 @@ start:
 	./gradlew run
 
 build:
-	./gradlew clean
-	./gradlew build
+	./gradlew clean build
 
 clean:
 	./gradlew clean

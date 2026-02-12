@@ -37,7 +37,6 @@ class UrlsControllerTest {
 
     private Context ctx;
 
-    // САМОЕ ГЛАВНОЕ — создаём валидаторы БЕЗ вызова .get() внутри фабрики
     private static Validator<Long> longValidator(Long value) {
         @SuppressWarnings("unchecked")
         Validator<Long> v = mock(Validator.class);
@@ -57,7 +56,6 @@ class UrlsControllerTest {
     void setUp() {
         ctx = mock(Context.class);
 
-        // По умолчанию — нормальные значения, чтобы не падало
         when(ctx.pathParamAsClass(anyString(), eq(Long.class))).thenAnswer(i -> longValidator(1L));
         when(ctx.formParamAsClass(eq("url"), eq(String.class))).thenAnswer(i -> stringValidator("https://example.com"));
     }

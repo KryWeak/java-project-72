@@ -13,4 +13,8 @@ public class ActualTime {
         String formattedTime = dateTime.getHour() + ":" + (minutes > 9 ? minutes : "0" + minutes);
         return formattedDate + " " + formattedTime;
     }
+
+    public static String getActualTime(LocalDateTime dateTime) {
+        return getActualTime(Timestamp.valueOf(dateTime));
+    }
 }
