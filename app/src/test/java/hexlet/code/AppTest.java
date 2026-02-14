@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AppTest {
+public final class AppTest {
 
     private static MockWebServer mockWebServer;
     private static Javalin app;
