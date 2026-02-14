@@ -4,6 +4,7 @@ import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlChecksRepository;
 import hexlet.code.repository.UrlsRepository;
+import hexlet.code.utils.ActualTime;
 import hexlet.code.utils.NamedRoutes;
 import hexlet.code.utils.TestUtils;
 import io.javalin.Javalin;
@@ -25,6 +26,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -200,12 +204,6 @@ public class AppTest {
     }
 
     @Test
-    void testCheckNonExistentUrlCheck() throws SQLException {
-        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 123456L);
-        assertThat(check).isNull();
-    }
-
-    @Test
     void testUrlsRepositoryGetEntitiesNotEmpty() throws SQLException {
         Url url = new Url(testUrl);
         UrlsRepository.save(url);
@@ -224,4 +222,20 @@ public class AppTest {
         });
     }
 
+    @Test
+    void testActualTimeWithNulls() {
+        assertThat(ActualTime.getActualTime((Timestamp) null)).isEqualTo("");
+        assertThat(ActualTime.getActualTime((LocalDateTime) null)).isEqualTo("");
+        assertThat(ActualTime.getActualTime((Instant) null)).isEqualTo("");
+    }
+
+    @Test
+    void testGetEntitiesByUrlIdEmpty() throws SQLException {
+        assertThat(UrlChecksRepository.getEntitiesByUrlId(9999L)).isEmpty();
+    }
+
+    @Test
+    void testFindLatestChecksEmpty() throws SQLException {
+        assertThat(UrlChecksRepository.findLatestChecks()).isEmpty();
+    }
 }
