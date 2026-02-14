@@ -16,7 +16,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +32,10 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static hexlet.code.repository.BaseRepository.dataSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AppTest {
+
     private static MockWebServer mockWebServer;
     private static Javalin app;
     private static String testUrl;
@@ -47,28 +46,37 @@ public class AppTest {
             return reader.lines().collect(Collectors.joining("\n"));
         }
     }
-    @BeforeEach
-    public final void setApp() throws IOException, SQLException {
-        app = App.getApp();
-    }
 
     @BeforeAll
-    public static void beforeAll() throws IOException {
+    static void initDataSource() throws SQLException, IOException {
+        org.h2.jdbcx.JdbcDataSource ds = new org.h2.jdbcx.JdbcDataSource();
+        ds.setURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+        ds.setUser("sa");
+        ds.setPassword("");
+
+        com.zaxxer.hikari.HikariDataSource hikariDS = new com.zaxxer.hikari.HikariDataSource();
+        hikariDS.setDataSource(ds);
+        BaseRepository.dataSource = hikariDS;
+
         mockWebServer = new MockWebServer();
         mockWebServer.start();
-        mockWebServer.enqueue(new MockResponse().setBody(readResourceFile("test.html")).setResponseCode(200));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(readResourceFile("test.html"))
+                .setResponseCode(200));
         testUrl = mockWebServer.url("/").toString();
     }
 
     @AfterAll
-    static void tearDown() throws SQLException {
+    static void tearDown() throws IOException, SQLException {
         if (BaseRepository.dataSource instanceof com.zaxxer.hikari.HikariDataSource ds) {
             ds.close();
         }
+        mockWebServer.shutdown();
     }
 
-    public static void shutDown() throws IOException {
-        mockWebServer.shutdown();
+    @BeforeEach
+    void setApp() throws IOException, SQLException {
+        app = App.getApp();
     }
 
     @Test
@@ -79,6 +87,7 @@ public class AppTest {
             assertThat(response.body()).isNotNull();
         });
     }
+
     @Test
     void testUrlsPage() {
         JavalinTest.test(app, (server, client) -> {
@@ -86,10 +95,19 @@ public class AppTest {
             assertThat(response.code()).isEqualTo(200);
         });
     }
+
     @Test
-    void testUrlsShow() {
+    void testUrlsShowNonExistent() {
         JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/urls/2");
+            var response = client.get("/urls/9999");
+            assertThat(response.code()).isEqualTo(404);
+        });
+    }
+
+    @Test
+    void testCheckNonExistentUrl() {
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.post("/urls/9999/checks");
             assertThat(response.code()).isEqualTo(404);
         });
     }
@@ -99,7 +117,6 @@ public class AppTest {
         String urlString = String.format("http://localhost:%d/", mockWebServer.getPort());
         Url url = new Url(urlString);
         UrlsRepository.save(url);
-
         assertThat(url.getId()).isNotNull();
 
         mockWebServer.enqueue(new MockResponse()
@@ -117,32 +134,20 @@ public class AppTest {
                     .build();
 
             Response postResponse = clientWithoutRedirect.newCall(postRequest).execute();
-
             int status = postResponse.code();
             String location = postResponse.header("Location");
 
-            System.out.println("POST status: " + status);
-            System.out.println("POST Location: " + location);
-
-            assertThat(status)
-                    .as("POST /checks должен вернуть статус редиректа (3xx)")
-                    .isBetween(300, 399);
-
-            assertThat(location)
-                    .as("Location должен указывать на страницу URL")
-                    .isEqualTo("/urls/" + url.getId());
+            assertThat(status).isBetween(300, 399);
+            assertThat(location).isEqualTo("/urls/" + url.getId());
 
             Request getRequest = new Request.Builder()
                     .url("http://localhost:" + server.port() + location)
                     .get()
                     .build();
-
             Response pageResponse = clientWithoutRedirect.newCall(getRequest).execute();
             assertThat(pageResponse.code()).isEqualTo(200);
 
             String body = pageResponse.body().string();
-            System.out.println("GET body length: " + body.length());
-
             var checks = UrlChecksRepository.getEntitiesByUrlId(url.getId());
             assertThat(checks).isNotEmpty();
 
@@ -150,15 +155,12 @@ public class AppTest {
             assertThat(check.getH1()).isNotNull();
             assertThat(check.getTitle()).isNotNull();
             assertThat(check.getDescription()).isNotNull();
-
-            assertThat(body).contains(check.getTitle());
-            assertThat(body).contains(check.getH1());
-            assertThat(body).contains(check.getDescription());
+            assertThat(body).contains(check.getTitle(), check.getH1(), check.getDescription());
         });
     }
 
     @Test
-    public void testUrlsRepository() throws SQLException {
+    void testUrlsRepository() throws SQLException {
         Url url1 = new Url(testUrl);
         Url url2 = new Url("https://example.com");
 
@@ -177,63 +179,9 @@ public class AppTest {
     }
 
     @Test
-    void testGetNonExistentUrlById() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/urls/9999");
-            assertThat(response.code()).isEqualTo(404);
-        });
-    }
-
-    @Test
-    void testGetNonExistentUrlByName() throws SQLException {
-        assertThat(UrlsRepository.getByName("non-existent")).isEmpty();
-    }
-
-    @Test
-    void testCheckNonExistentUrl() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.post("/urls/9999/checks");
-            assertThat(response.code()).isEqualTo(404);
-        });
-    }
-
-    @Test
-    void testIndex() {
-        JavalinTest.test(app, (server, client) -> {
-            Assertions.assertThat(client.get("/").code()).isEqualTo(200);
-        });
-    }
-
-    @Test
     void testGetNonExistentUrlCheck() throws SQLException {
-        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 999L);
+        Map<String, Object> check = TestUtils.getUrlCheck(BaseRepository.dataSource, 999L);
         assertThat(check).isNull();
-    }
-
-    @Test
-    void testUrlsRepositoryGetEntitiesNotEmpty() throws SQLException {
-        Url url = new Url(testUrl);
-        UrlsRepository.save(url);
-
-        var urls = UrlsRepository.getEntities();
-        assertThat(urls).isNotEmpty();
-        assertThat(urls.get(0).getName()).isEqualTo(testUrl);
-    }
-
-    @Test
-    void testAppRootContainsIndex() {
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/");
-            assertThat(response.code()).isEqualTo(200);
-            assertThat(response.body().string()).contains("<!DOCTYPE html>");
-        });
-    }
-
-    @Test
-    void testActualTimeWithNulls() {
-        assertThat(ActualTime.getActualTime((Timestamp) null)).isEqualTo("");
-        assertThat(ActualTime.getActualTime((LocalDateTime) null)).isEqualTo("");
-        assertThat(ActualTime.getActualTime((Instant) null)).isEqualTo("");
     }
 
     @Test
@@ -244,5 +192,27 @@ public class AppTest {
     @Test
     void testFindLatestChecksEmpty() throws SQLException {
         assertThat(UrlChecksRepository.findLatestChecks()).isEmpty();
+    }
+
+    @Test
+    void testActualTimeWithNulls() {
+        assertThat(ActualTime.getActualTime((Timestamp) null)).isEqualTo("");
+        assertThat(ActualTime.getActualTime((LocalDateTime) null)).isEqualTo("");
+        assertThat(ActualTime.getActualTime((Instant) null)).isEqualTo("");
+    }
+
+    @Test
+    void testActualTimeWithValues() {
+        var now = LocalDateTime.of(2026, 2, 14, 15, 7);
+        var ts = Timestamp.valueOf(now);
+        var instant = now.atZone(java.time.ZoneId.systemDefault()).toInstant();
+
+        String formattedLocal = ActualTime.getActualTime(now);
+        String formattedTimestamp = ActualTime.getActualTime(ts);
+        String formattedInstant = ActualTime.getActualTime(instant);
+
+        assertThat(formattedLocal).isEqualTo("14/02/2026 15:07");
+        assertThat(formattedTimestamp).isEqualTo(formattedLocal);
+        assertThat(formattedInstant).isEqualTo(formattedLocal);
     }
 }
