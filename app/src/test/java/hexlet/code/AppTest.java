@@ -199,4 +199,29 @@ public class AppTest {
         assertThat(check).isNull();
     }
 
+    @Test
+    void testCheckNonExistentUrlCheck() throws SQLException {
+        Map<String, Object> check = TestUtils.getUrlCheck(dataSource, 123456L);
+        assertThat(check).isNull();
+    }
+
+    @Test
+    void testUrlsRepositoryGetEntitiesNotEmpty() throws SQLException {
+        Url url = new Url(testUrl);
+        UrlsRepository.save(url);
+
+        var urls = UrlsRepository.getEntities();
+        assertThat(urls).isNotEmpty();
+        assertThat(urls.get(0).getName()).isEqualTo(testUrl);
+    }
+
+    @Test
+    void testAppRootContainsIndex() {
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.get("/");
+            assertThat(response.code()).isEqualTo(200);
+            assertThat(response.body().string()).contains("<!DOCTYPE html>");
+        });
+    }
+
 }

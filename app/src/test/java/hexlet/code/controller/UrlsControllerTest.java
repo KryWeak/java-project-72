@@ -180,6 +180,19 @@ class UrlsControllerTest {
     }
 
     @Test
+    void testShowNonExistentUrl() throws Exception {
+        // id несуществующего URL
+        long fakeId = 9999L;
+        when(ctx.pathParamAsClass("id", Long.class)).thenAnswer(i -> longValidator(fakeId));
+
+        try (MockedStatic<UrlsRepository> repo = mockStatic(UrlsRepository.class)) {
+            repo.when(() -> UrlsRepository.find(fakeId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundResponse.class, () -> UrlsController.show(ctx));
+        }
+    }
+
+    @Test
     void testCheckFailNetworkError() throws Exception {
         Url url = new Url("https://bad-url.example");
         url.setId(1L);
@@ -195,7 +208,6 @@ class UrlsControllerTest {
 
             UrlsController.check(ctx);
 
-            // Исправляем вызовы verify: оба аргумента теперь матчеры
             verify(ctx).sessionAttribute(
                     argThat(name -> "flash".equals(name)),
                     argThat(value -> ((String) value).startsWith("Ошибка при проверке:"))
