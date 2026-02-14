@@ -13,7 +13,6 @@ import io.javalin.http.NotFoundResponse;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -92,26 +91,23 @@ public class UrlsController {
     }
 
     public static void check(Context ctx) throws SQLException {
-        var urlId = ctx.pathParamAsClass("id", Long.class).get();
-
-        var url = UrlsRepository.find(urlId)
-                .orElseThrow(() -> new NotFoundResponse("Url not found"));
+        Long urlId = null;
 
         try {
+            urlId = ctx.pathParamAsClass("id", Long.class).get();
+
+            var url = UrlsRepository.find(urlId)
+                    .orElseThrow(() -> new NotFoundResponse("Url not found"));
+
             HttpResponse<String> response = Unirest.get(url.getName()).asString();
 
-            var statusCode = response.getStatus();
+            int statusCode = response.getStatus();
             var document = Jsoup.parse(response.getBody());
 
-            var title = document.title();
-
-            Element h1Element = document.selectFirst("h1");
-            var h1 = h1Element == null ? "" : h1Element.text();
-
-            Element descriptionElement = document.selectFirst("meta[name=description]");
-            var description = descriptionElement == null
-                    ? ""
-                    : descriptionElement.attr("content");
+            String title = document.title();
+            String h1 = document.selectFirst("h1") != null ? document.selectFirst("h1").text() : null;
+            String description = document.selectFirst("meta[name=description]") != null
+                    ? document.selectFirst("meta[name=description]").attr("content") : null;
 
             var urlCheck = new UrlCheck(statusCode, title, h1, description);
             urlCheck.setUrlId(url.getId());
@@ -119,14 +115,17 @@ public class UrlsController {
             UrlChecksRepository.save(urlCheck);
 
             ctx.sessionAttribute("flash", "Страница успешно проверена");
-            ctx.sessionAttribute("flashType", "correct");
+            ctx.sessionAttribute("flashType", "success");
 
         } catch (Exception e) {
-            ctx.sessionAttribute("flash", "Некорректный адрес");
-            ctx.sessionAttribute("flashType", "error");
+            e.printStackTrace();
+            ctx.sessionAttribute("flash", "Ошибка при проверке: " + e.getMessage());
+            ctx.sessionAttribute("flashType", "danger");
+        } finally {
+            if (urlId != null) {
+                ctx.redirect(NamedRoutes.urlPath(urlId));
+            }
         }
-
-        ctx.redirect(NamedRoutes.urlPath(urlId));
     }
 
     private static String normalizeUrl(URI uri) {

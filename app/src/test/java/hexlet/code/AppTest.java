@@ -8,6 +8,10 @@ import hexlet.code.utils.NamedRoutes;
 import hexlet.code.utils.TestUtils;
 import io.javalin.Javalin;
 import io.javalin.testtools.JavalinTest;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.assertj.core.api.Assertions;
@@ -21,13 +25,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static hexlet.code.repository.BaseRepository.dataSource;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AppTest {
     private static MockWebServer mockWebServer;
@@ -83,30 +85,64 @@ public class AppTest {
 
     @Test
     void testShowUrl() throws Exception {
-        app = App.getApp();
-
-        Url url = new Url("http://localhost:54391/");
-        url.setCreatedAt(LocalDateTime.of(2026, 2, 12, 3, 28));
+        String urlString = String.format("http://localhost:%d/", mockWebServer.getPort());
+        Url url = new Url(urlString);
         UrlsRepository.save(url);
 
-        UrlCheck urlCheck = new UrlCheck(
-                200,
-                "Test Title",
-                "Test H1",
-                "Test Description"
-        );
-        urlCheck.setUrlId(url.getId());
-        urlCheck.setCreatedAt(Timestamp.valueOf(LocalDateTime.of(2026, 2, 12, 3, 28)));
-        UrlChecksRepository.save(urlCheck);
+        assertThat(url.getId()).isNotNull();
 
-        JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/urls/" + url.getId());
-            assertThat(response.code()).isEqualTo(200);
-            String body = response.body().string();
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(readResourceFile("test.html"))
+                .setResponseCode(200));
 
-            assertThat(body).contains("Test Title");
-            assertThat(body).contains("Test H1");
-            assertThat(body).contains("Test Description");
+        OkHttpClient clientWithoutRedirect = new OkHttpClient.Builder()
+                .followRedirects(false)
+                .build();
+
+        JavalinTest.test(app, (server, ignored) -> {
+            Request postRequest = new Request.Builder()
+                    .url("http://localhost:" + server.port() + "/urls/" + url.getId() + "/checks")
+                    .post(RequestBody.create("", null))
+                    .build();
+
+            Response postResponse = clientWithoutRedirect.newCall(postRequest).execute();
+
+            int status = postResponse.code();
+            String location = postResponse.header("Location");
+
+            System.out.println("POST status: " + status);
+            System.out.println("POST Location: " + location);
+
+            assertThat(status)
+                    .as("POST /checks должен вернуть статус редиректа (3xx)")
+                    .isBetween(300, 399);
+
+            assertThat(location)
+                    .as("Location должен указывать на страницу URL")
+                    .isEqualTo("/urls/" + url.getId());
+
+            Request getRequest = new Request.Builder()
+                    .url("http://localhost:" + server.port() + location)
+                    .get()
+                    .build();
+
+            Response pageResponse = clientWithoutRedirect.newCall(getRequest).execute();
+            assertThat(pageResponse.code()).isEqualTo(200);
+
+            String body = pageResponse.body().string();
+            System.out.println("GET body length: " + body.length());
+
+            var checks = UrlChecksRepository.getEntitiesByUrlId(url.getId());
+            assertThat(checks).isNotEmpty();
+
+            UrlCheck check = checks.getFirst();
+            assertThat(check.getH1()).isNotNull();
+            assertThat(check.getTitle()).isNotNull();
+            assertThat(check.getDescription()).isNotNull();
+
+            assertThat(body).contains(check.getTitle());
+            assertThat(body).contains(check.getH1());
+            assertThat(body).contains(check.getDescription());
         });
     }
 

@@ -32,7 +32,6 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.doReturn;
 
-
 class UrlsControllerTest {
 
     private Context ctx;
@@ -175,7 +174,7 @@ class UrlsControllerTest {
             UrlsController.check(ctx);
 
             verify(ctx).sessionAttribute("flash", "Страница успешно проверена");
-            verify(ctx).sessionAttribute("flashType", "correct");
+            verify(ctx).sessionAttribute("flashType", "success");
             verify(ctx).redirect(NamedRoutes.urlPath(7L));
         }
     }
@@ -196,8 +195,16 @@ class UrlsControllerTest {
 
             UrlsController.check(ctx);
 
-            verify(ctx).sessionAttribute("flash", "Некорректный адрес");
-            verify(ctx).sessionAttribute("flashType", "error");
+            // Исправляем вызовы verify: оба аргумента теперь матчеры
+            verify(ctx).sessionAttribute(
+                    argThat(name -> "flash".equals(name)),
+                    argThat(value -> ((String) value).startsWith("Ошибка при проверке:"))
+            );
+            verify(ctx).sessionAttribute(
+                    argThat(name -> "flashType".equals(name)),
+                    argThat(value -> "danger".equals(value))
+            );
+
             verify(ctx).redirect(NamedRoutes.urlPath(1L));
         }
     }

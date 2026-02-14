@@ -5,6 +5,7 @@ import hexlet.code.model.UrlCheck;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -18,13 +19,15 @@ public class UrlChecksRepository extends BaseRepository {
         try (var connection = dataSource.getConnection();
              var preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            Timestamp createdAt = new Timestamp(System.currentTimeMillis());
             preparedStatement.setInt(1, urlCheck.getStatusCode());
             preparedStatement.setString(2, urlCheck.getTitle());
             preparedStatement.setString(3, urlCheck.getH1());
             preparedStatement.setString(4, urlCheck.getDescription());
             preparedStatement.setLong(5, urlCheck.getUrlId());
-            preparedStatement.setTimestamp(6, createdAt);
+            preparedStatement.setTimestamp(6, urlCheck.getCreatedAt() != null
+                    ? Timestamp.valueOf(urlCheck.getCreatedAt())
+                    : Timestamp.valueOf(LocalDateTime.now()));
+
             preparedStatement.executeUpdate();
 
             var generatedKeys = preparedStatement.getGeneratedKeys();
@@ -53,7 +56,9 @@ public class UrlChecksRepository extends BaseRepository {
                 var title = resultSet.getString("title");
                 var h1 = resultSet.getString("h1");
                 var description = resultSet.getString("description");
-                var createdAt = resultSet.getTimestamp("created_at");
+
+                var timestamp = resultSet.getTimestamp("created_at");
+                var createdAt = timestamp != null ? timestamp.toLocalDateTime() : null;
 
                 var urlCheck = new UrlCheck(id, urlId, statusCode, title, h1, description, createdAt);
                 entities.addFirst(urlCheck);
@@ -62,12 +67,24 @@ public class UrlChecksRepository extends BaseRepository {
             return entities;
         }
     }
+
     public static Map<Long, UrlCheck> findLatestChecks() throws SQLException {
-        var sql = "SELECT DISTINCT ON (url_id) * from url_checks order by url_id DESC, id DESC";
+        var sql = """
+            SELECT uc.*
+            FROM url_checks uc
+            INNER JOIN (
+                SELECT url_id, MAX(created_at) as max_created_at
+                FROM url_checks
+                GROUP BY url_id
+            ) latest ON uc.url_id = latest.url_id
+                     AND uc.created_at = latest.max_created_at
+            """;
+
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             var resultSet = stmt.executeQuery();
             var result = new HashMap<Long, UrlCheck>();
+
             while (resultSet.next()) {
                 var id = resultSet.getLong("id");
                 var urlId = resultSet.getLong("url_id");
@@ -75,11 +92,11 @@ public class UrlChecksRepository extends BaseRepository {
                 var title = resultSet.getString("title");
                 var h1 = resultSet.getString("h1");
                 var description = resultSet.getString("description");
-                var createdAt = resultSet.getTimestamp("created_at");
-                var check = new UrlCheck(statusCode, title, h1, description);
-                check.setId(id);
-                check.setUrlId(urlId);
-                check.setCreatedAt(createdAt);
+
+                var timestamp = resultSet.getTimestamp("created_at");
+                var createdAt = timestamp != null ? timestamp.toLocalDateTime() : null;
+
+                var check = new UrlCheck(id, urlId, statusCode, title, h1, description, createdAt);
                 result.put(urlId, check);
             }
             return result;
