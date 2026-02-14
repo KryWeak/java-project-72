@@ -2,6 +2,7 @@ package hexlet.code;
 
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlChecksRepository;
 import hexlet.code.repository.UrlsRepository;
 import hexlet.code.utils.ActualTime;
@@ -60,6 +61,12 @@ public class AppTest {
     }
 
     @AfterAll
+    static void tearDown() throws SQLException {
+        if (BaseRepository.dataSource instanceof com.zaxxer.hikari.HikariDataSource ds) {
+            ds.close();
+        }
+    }
+
     public static void shutDown() throws IOException {
         mockWebServer.shutdown();
     }
