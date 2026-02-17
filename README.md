@@ -17,3 +17,37 @@
 [Перейти к приложению](https://java-project-72-an1g.onrender.com)
 
 ---
+
+## Запуск проекта локально
+
+1. Склонируйте репозиторий:
+
+```
+git clone https://github.com/KryWeak/java-project-72.git
+cd java-project-72
+```
+
+2. Соберите проект с помощью Gradle:
+
+```
+./gradlew build
+```
+
+3. Запустите приложение:
+
+```
+./gradlew run
+```
+
+4. Перейдите в браузере на:
+
+```
+http://localhost:7070
+```
+
+---
+## Запуск тестов
+
+```
+./gradlew test
+```
