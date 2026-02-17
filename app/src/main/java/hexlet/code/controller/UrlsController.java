@@ -12,6 +12,7 @@ import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 
 import java.net.URI;
@@ -21,6 +22,7 @@ import java.util.Collections;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
+@Slf4j
 public class UrlsController {
 
     public static void root(Context ctx) {
@@ -118,7 +120,7 @@ public class UrlsController {
             ctx.sessionAttribute("flashType", "success");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Ошибка при проверке URL: {}", urlId, e);
             ctx.sessionAttribute("flash", "Ошибка при проверке: " + e.getMessage());
             ctx.sessionAttribute("flashType", "danger");
         } finally {
